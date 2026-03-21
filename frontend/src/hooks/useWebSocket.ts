@@ -13,7 +13,7 @@ export function useWebSocket(url: string, options: UseWebSocketOptions = {}) {
   
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const connect = useCallback(() => {
     const token = localStorage.getItem('token')
