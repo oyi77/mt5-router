@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # MT5 Router Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mt5-router-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-mt5-router-secret-change-me}
+      - MT5_IMAGE=${MT5_IMAGE:-lprett/mt5linux:mt5-installed}
+    networks:
+      - mt5-network
+
+  # MT5 Router Frontend (optional - can serve static files from backend)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mt5-router-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mt5-network
+
+networks:
+  mt5-network:
+    driver: bridge
