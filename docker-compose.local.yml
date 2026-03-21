@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=sqlite:///./data/mt5router.db
+    volumes:
+      - ./backend/app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
