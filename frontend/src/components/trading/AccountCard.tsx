@@ -5,11 +5,21 @@ import { AccountInfo } from '@/api/trading'
 import { Wallet, TrendingUp, Shield, Server } from 'lucide-react'
 
 interface AccountCardProps {
-  account: AccountInfo
+  account: AccountInfo | null
   className?: string
 }
 
 export function AccountCard({ account, className }: AccountCardProps) {
+  if (!account) {
+    return (
+      <Card className={className}>
+        <CardContent className="py-8">
+          <p className="text-center text-muted-foreground">No account data available. Select an instance to view trading info.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const marginLevelVariant = account.margin_level > 200 ? 'success' : account.margin_level > 100 ? 'warning' : 'destructive'
 
   return (

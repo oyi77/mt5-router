@@ -6,7 +6,7 @@ A powerful, self-hosted dashboard for managing MetaTrader 5 instances with VNC a
 
 ### Trading
 - **Market Orders**: BUY/SELL with instant execution
-- **Pending Orders**: BUY_LIMIT, SELL_LIMIT, BUY_STOP, BUY_STOP_LIMIT
+- **Pending Orders**: BUY_LIMIT, SELL_LIMIT, BUY_STOP, BUY_STOP_LIMIT, SELL_STOP_LIMIT
 - **Order Modification**: Modify SL/TP on open positions
 - **Partial Close**: Close partial position volume
 - **Real-time Streaming**: WebSocket for live quotes, candles, ticks
@@ -18,6 +18,13 @@ A powerful, self-hosted dashboard for managing MetaTrader 5 instances with VNC a
 - **VNC Access**: Browser-based remote desktop via noVNC
 - **Container Metrics**: CPU, Memory, Network per instance
 - **Logs**: Real-time container log streaming
+
+### Multi-Server SSH Management (v3.0)
+- **SSH Server Connections**: Connect and manage multiple VPS servers
+- **Remote Docker Control**: Deploy MT5 instances across servers
+- **Server Health Monitoring**: Real-time CPU, Memory, Disk metrics
+- **Encrypted Credentials**: SSH keys and passwords stored securely
+- **Server Status**: Online/Offline health checks
 
 ### Monitoring & Alerts
 - **System Metrics**: CPU, Memory, Disk with WebSocket streaming
@@ -33,39 +40,74 @@ A powerful, self-hosted dashboard for managing MetaTrader 5 instances with VNC a
 - **Rate Limiting**: Per-user/API-key request throttling
 - **Audit Logging**: Track all user actions
 
+### Billing & Subscriptions (v3.0)
+- **Stripe Integration**: Subscription billing with checkout
+- **Tiered Plans**: Free, Basic, Pro, Enterprise
+- **Usage Tracking**: Monitor API calls, servers, instances
+- **Invoicing**: Automatic invoice generation
+- **Customer Portal**: Self-service billing management
+
+### Authentication & Security (v3.0)
+- **Email Verification**: Verify user email addresses
+- **Password Reset**: Secure password recovery via email
+- **2FA/TOTP**: Two-factor authentication with Google Authenticator
+- **Account Lockout**: Brute force protection
+- **Security Dashboard**: View security status
+
 ## 🏗️ Architecture
 
 ```
-MT5 Router SaaS Architecture
-============================
+MT5 Router SaaS Architecture (v3.0)
+====================================
 
 Frontend (React)          Backend (FastAPI)         MT5 Instances
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────┐
 │ Dashboard UI    │ ───▶ │ REST API        │ ───▶ │ Docker      │
 │ Trading Panel   │      │ WebSocket       │      │ Containers  │
 │ Notifications   │      │ Auth (JWT+API)  │      │ (mt5linux)  │
-│ Admin Panel     │      │ Rate Limiter    │      │             │
-└─────────────────┘      └────────┬────────┘      └─────────────┘
+│ Server Mgmt     │      │ Rate Limiter    │      │             │
+│ Billing Panel   │      │ 2FA/TOTP        │      └─────────────┘
+└─────────────────┘      └────────┬────────┘
                                   │
                        ┌──────────┴──────────┐
                        │    PostgreSQL/      │
                        │     SQLite          │
                        │ (Users, Alerts,     │
-                       │  Audit, Usage)      │
+                       │  Billing, Audit)    │
                        └─────────────────────┘
 
 External Integrations
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│ Telegram    │ │ Webhooks    │ │ Stripe      │
-│ Bot API     │ │(TradingView)│ │ (Billing)   │
-└─────────────┘ └─────────────┘ └─────────────┘
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Telegram    │ │ Webhooks    │ │ Stripe      │ │ SMTP        │
+│ Bot API     │ │(TradingView)│ │ (Billing)   │ │ (Email)     │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
+
+Multi-Server Architecture
+┌─────────────────────────────────────────────────────────────┐
+│                     MT5 Router Dashboard                    │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ SSH (paramiko)
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+    ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+    │ Server 1   │ │ Server 2   │ │ Server 3   │
+    │ (Local)    │ │ (VPS)      │ │ (VPS)      │
+    ├────────────┤ ├────────────┤ ├────────────┤
+    │ MT5 × 3   │ │ MT5 × 5   │ │ MT5 × 2   │
+    │ VNC        │ │ VNC        │ │ VNC        │
+    └────────────┘ └────────────┘ └────────────┘
 ```
 
-## 📋 API Endpoints (40+)
+## 📋 API Endpoints (60+)
 
 ### Authentication
 - POST `/api/v1/auth/register` - Register new user
-- POST `/api/v1/auth/login` - JWT login
+- POST `/api/v1/auth/login` - JWT login (with 2FA support)
+- POST `/api/v1/auth/verify-email` - Verify email token
+- POST `/api/v1/auth/forgot-password` - Request password reset
+- POST `/api/v1/auth/reset-password` - Reset password
+- POST `/api/v1/auth/2fa/setup` - Setup 2FA
+- POST `/api/v1/auth/2fa/verify` - Verify 2FA token
 - GET `/api/v1/auth/me` - Get current user
 - POST `/api/v1/users/api-keys` - Create API key
 - GET `/api/v1/users/api-keys` - List API keys
@@ -78,6 +120,27 @@ External Integrations
 - POST `/api/v1/trading/positions/{id}/partial-close` - Partial close
 - GET `/api/v1/trading/symbols/{symbol}/candles` - Candle data
 - WS `/api/v1/trading/ticks` - Real-time ticks
+
+### SSH Servers (v3.0)
+- POST `/api/v1/servers` - Add SSH server
+- GET `/api/v1/servers` - List SSH servers
+- PUT `/api/v1/servers/{id}` - Update server
+- DELETE `/api/v1/servers/{id}` - Remove server
+- POST `/api/v1/servers/{id}/health` - Check server health
+- GET `/api/v1/servers/{id}/instances` - List remote instances
+- POST `/api/v1/servers/{id}/instances` - Deploy instance on server
+- POST `/api/v1/servers/{id}/instances/{name}/{action}` - Control remote instance
+
+### Billing (v3.0)
+- GET `/api/v1/billing/tiers` - List subscription tiers
+- GET `/api/v1/billing/subscription` - Get current subscription
+- POST `/api/v1/billing/checkout` - Create Stripe checkout
+- GET `/api/v1/billing/portal` - Get customer portal URL
+- POST `/api/v1/billing/cancel` - Cancel subscription
+- POST `/api/v1/billing/reactivate` - Reactivate subscription
+- GET `/api/v1/billing/invoices` - List invoices
+- GET `/api/v1/billing/usage` - Get usage stats
+- POST `/api/v1/billing/webhook` - Stripe webhook
 
 ### Notifications
 - POST `/api/v1/notifications/telegram/configure` - Setup Telegram
@@ -143,6 +206,15 @@ curl -H "X-API-Key: mtr_xxxxxxxxxxxx" \
   "channel": "telegram"
 }
 ```
+
+## 💳 Subscription Tiers
+
+| Tier | Price | Servers | Instances | API Calls/Day |
+|------|-------|---------|-----------|---------------|
+| Free | $0 | 1 | 1 | 1,000 |
+| Basic | $29/mo | 3 | 5 | 10,000 |
+| Pro | $79/mo | 10 | 25 | 100,000 |
+| Enterprise | Custom | ∞ | ∞ | ∞ |
 
 ## 🔄 WebSocket Connections
 - `/api/v1/monitoring/stream` - Real-time system metrics

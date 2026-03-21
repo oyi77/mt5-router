@@ -10,11 +10,13 @@ import { AccountCard } from "@/components/trading/AccountCard"
 import { PositionsTable } from "@/components/trading/PositionsTable"
 import { VNCViewer } from "@/components/vnc/VNCViewer"
 import { NotificationsPanel } from "@/components/notifications/NotificationsPanel"
+import { ServersPanel } from "@/components/servers/ServersPanel"
+import { BillingPanel } from "@/components/billing/BillingPanel"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Server, Plus, RefreshCw, Activity, Wallet, Monitor,
-  LogOut, Bell
+  LogOut, Bell, CreditCard
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -170,6 +172,14 @@ export function Dashboard() {
               <Bell className="h-4 w-4 mr-2" />
               Notifications
             </TabsTrigger>
+            <TabsTrigger value="servers">
+              <Server className="h-4 w-4 mr-2" />
+              Servers
+            </TabsTrigger>
+            <TabsTrigger value="billing">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Billing
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="instances">
@@ -204,20 +214,15 @@ export function Dashboard() {
                   <InstanceCard
                     key={instance.id}
                     instance={instance}
-                    onStart={(id) => startInstance.mutate(id)}
-                    onStop={(id) => stopInstance.mutate(id)}
-                    onRestart={(id) => restartInstance.mutate(id)}
-                    onDelete={(id) => deleteInstance.mutate(id)}
-                    onViewVNC={(id) => {
-                      setSelectedInstance(id)
+                    onStart={() => startInstance.mutate(instance.id)}
+                    onStop={() => stopInstance.mutate(instance.id)}
+                    onRestart={() => restartInstance.mutate(instance.id)}
+                    onDelete={() => deleteInstance.mutate(instance.id)}
+                    onVNC={() => {
+                      setSelectedInstance(instance.id)
                       setActiveTab("vnc")
                     }}
-                    onViewLogs={(id) => console.log("View logs:", id)}
-                    isLoading={
-                      startInstance.isPending ||
-                      stopInstance.isPending ||
-                      restartInstance.isPending
-                    }
+                    onLogs={() => console.log("View logs:", instance.id)}
                   />
                 ))}
               </div>
@@ -275,6 +280,14 @@ export function Dashboard() {
 
           <TabsContent value="notifications">
             <NotificationsPanel />
+          </TabsContent>
+
+          <TabsContent value="servers">
+            <ServersPanel />
+          </TabsContent>
+
+          <TabsContent value="billing">
+            <BillingPanel />
           </TabsContent>
         </Tabs>
       </main>

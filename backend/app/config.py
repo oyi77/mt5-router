@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     API_KEY_PREFIX: str = "mtr_"
     RATE_LIMIT_PER_MINUTE: int = 100
     ENCRYPTION_KEY: str = "your-fernet-key-here"
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_BASIC_MONTHLY: str = ""
+    STRIPE_PRICE_PRO_MONTHLY: str = ""
+
+    # Email (SMTP)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    FROM_EMAIL: str = ""
+    BASE_URL: str = "https://mt-oc.aitradepulse.com"
 
     class Config:
         env_file = ".env"
