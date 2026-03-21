@@ -91,6 +91,57 @@ class MT5Service:
 
         return self._mt5
 
+    def connect(self, password: str, server: str) -> bool:
+        if not self._check_server():
+            raise ConnectionError(
+                f"MT5 server unreachable at {self.host}:{self._get_container_port()}"
+            )
+
+        try:
+            from mt5linux import MetaTrader5
+
+            self._mt5 = MetaTrader5(host=self.host, port=self._get_container_port())
+
+            initialized = self._mt5.initialize(
+                login=0, password=password, server=server, timeout=60000
+            )
+
+            if not initialized:
+                error = self._mt5.last_error()
+                logger.error(f"MT5 login failed: {error}")
+                self._mt5 = None
+                return False
+
+            logger.info(f"Successfully connected to MT5 server: {server}")
+            return True
+
+        except ImportError:
+            raise ImportError("mt5linux not installed")
+        except Exception as e:
+            logger.error(f"MT5 connection error: {e}")
+            self._mt5 = None
+            return False
+
+    def disconnect(self) -> bool:
+        if self._mt5 is not None:
+            try:
+                self._mt5.shutdown()
+                logger.info("MT5 disconnected")
+            except Exception as e:
+                logger.warning(f"MT5 shutdown warning: {e}")
+            finally:
+                self._mt5 = None
+        return True
+
+    def is_connected(self) -> bool:
+        if self._mt5 is None:
+            return False
+        try:
+            account = self._mt5.account_info()
+            return account is not None
+        except:
+            return False
+
     def get_account_info(self) -> Optional[Dict[str, Any]]:
         try:
             mt5 = self._connect()

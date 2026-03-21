@@ -73,6 +73,8 @@ class User(Base):
     ssh_servers = relationship("SSHServer", back_populates="owner")
     subscription = relationship("Subscription", back_populates="user", uselist=False)
     invoices = relationship("Invoice", back_populates="user")
+    strategies = relationship("CopyStrategy", back_populates="user")
+    subscribers = relationship("CopySubscriber", back_populates="user")
 
 
 class ApiKey(Base):
@@ -118,14 +120,22 @@ class MT5Account(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     instance_id = Column(String(50), ForeignKey("instances.id"))
-    login = Column(String(50))
-    server = Column(String(100))
+
+    login = Column(String(50), nullable=False)
+    server = Column(String(100), nullable=False)
     broker = Column(String(100))
     account_name = Column(String(255))
     is_demo = Column(Boolean, default=True)
-    encrypted_password = Column(Text)
+
+    encrypted_password = Column(Text, nullable=False)
+
+    connection_status = Column(String(20), default="disconnected")
+    connection_error = Column(Text)
     last_connected = Column(DateTime)
+    last_disconnected = Column(DateTime)
+
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     owner = relationship("User", back_populates="accounts")
     instance = relationship("Instance", back_populates="account")
@@ -254,3 +264,86 @@ class Invoice(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="invoices")
+
+
+class CopyStrategy(Base):
+    __tablename__ = "copy_strategies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    source_account_id = Column(Integer, ForeignKey("mt5_accounts.id"))
+
+    is_active = Column(Boolean, default=True)
+    symbol_filter = Column(Text)
+    max_lots = Column(Float, default=1.0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="strategies")
+    source_account = relationship("MT5Account")
+    subscribers = relationship("CopySubscriber", back_populates="strategy")
+    signals = relationship("CopySignal", back_populates="strategy")
+
+
+class CopySubscriber(Base):
+    __tablename__ = "copy_subscribers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    strategy_id = Column(Integer, ForeignKey("copy_strategies.id"))
+    target_account_id = Column(Integer, ForeignKey("mt5_accounts.id"))
+
+    is_active = Column(Boolean, default=True)
+    lot_multiplier = Column(Float, default=1.0)
+    lot_type = Column(String(20), default="fixed")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="subscribers")
+    strategy = relationship("CopyStrategy", back_populates="subscribers")
+    target_account = relationship("MT5Account")
+    positions = relationship("CopyPosition", back_populates="subscriber")
+
+
+class CopySignal(Base):
+    __tablename__ = "copy_signals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    strategy_id = Column(Integer, ForeignKey("copy_strategies.id"))
+
+    ticket = Column(Integer)
+    symbol = Column(String(50))
+    order_type = Column(String(20))
+    volume = Column(Float)
+    price = Column(Float)
+    sl = Column(Float)
+    tp = Column(Float)
+
+    status = Column(String(20), default="pending")
+    error_message = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    strategy = relationship("CopyStrategy", back_populates="signals")
+
+
+class CopyPosition(Base):
+    __tablename__ = "copy_positions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subscriber_id = Column(Integer, ForeignKey("copy_subscribers.id"))
+
+    provider_ticket = Column(Integer)
+    subscriber_ticket = Column(Integer)
+    symbol = Column(String(50))
+    order_type = Column(String(20))
+    volume = Column(Float)
+    opened_at = Column(DateTime, default=datetime.utcnow)
+    closed_at = Column(DateTime)
+    pnl = Column(Float)
+
+    subscriber = relationship("CopySubscriber", back_populates="positions")

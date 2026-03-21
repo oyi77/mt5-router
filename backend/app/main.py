@@ -14,6 +14,8 @@ from app.api import (
     users,
     servers,
     billing,
+    accounts,
+    copytrading,
 )
 from app.models.database import Base
 from app.core.database import engine
@@ -62,6 +64,8 @@ app.include_router(
 )
 app.include_router(servers.router, prefix="/api/v1/servers", tags=["Servers"])
 app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
+app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["MT5 Accounts"])
+app.include_router(copytrading.router, prefix="/api/v1/copy", tags=["Copy Trading"])
 
 
 @app.get("/health")
@@ -75,5 +79,12 @@ async def info():
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "mt5_image": settings.MT5_IMAGE,
-        "features": ["instances", "vnc", "trading", "monitoring", "notifications"],
+        "features": [
+            "instances",
+            "vnc",
+            "trading",
+            "monitoring",
+            "notifications",
+            "accounts",
+        ],
     }
