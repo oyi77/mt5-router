@@ -1,148 +1,156 @@
-# MT5 Router
+# MT5 Router - SaaS Trading Platform
 
-A robust dashboard for managing MetaTrader 5 instances with VNC access, trading API, and real-time monitoring.
+A powerful, self-hosted dashboard for managing MetaTrader 5 instances with VNC access, trading API, real-time monitoring, notifications, and multi-tenant SaaS architecture.
 
-## Features
+## 🚀 Features
 
-- **Instance Management**: Create, start, stop, restart, and delete MT5 Docker containers
-- **VNC Access**: Browser-based remote desktop access to MT5 terminals
-- **Trading API**: Full trading functionality via mt5linux RPYC bridge
-- **Real-time Monitoring**: System and container metrics with WebSocket updates
-- **JWT Authentication**: Secure access control
+### Trading
+- **Market Orders**: BUY/SELL with instant execution
+- **Pending Orders**: BUY_LIMIT, SELL_LIMIT, BUY_STOP, BUY_STOP_LIMIT
+- **Order Modification**: Modify SL/TP on open positions
+- **Partial Close**: Close partial position volume
+- **Real-time Streaming**: WebSocket for live quotes, candles, ticks
+- **Trade History**: Full deal history with configurable periods
+- **Copy Trading**: Strategy provider/subscriber architecture (Coming Soon)
 
-## Quick Start
+### Instance Management
+- **Docker Control**: Create, Start, Stop, Restart, Delete MT5 containers
+- **VNC Access**: Browser-based remote desktop via noVNC
+- **Container Metrics**: CPU, Memory, Network per instance
+- **Logs**: Real-time container log streaming
 
-### Prerequisites
+### Monitoring & Alerts
+- **System Metrics**: CPU, Memory, Disk with WebSocket streaming
+- **Alert Rules**: Price alerts, position alerts, account alerts
+- **Telegram Integration**: Real-time notifications via Telegram bot
+- **Webhooks**: TradingView and custom webhook support
 
-- Docker and Docker Compose
-- Python 3.11+ (for local development)
-- Node.js 20+ (for frontend development)
+### SaaS Architecture
+- **Multi-tenant**: Complete user management with roles
+- **API Keys**: Programmatic access with rate limiting
+- **JWT Authentication**: Secure token-based auth
+- **Database Persistence**: SQLite (dev) / PostgreSQL (production)
+- **Rate Limiting**: Per-user/API-key request throttling
+- **Audit Logging**: Track all user actions
 
-### Installation
+## 🏗️ Architecture
 
+```
+MT5 Router SaaS Architecture
+============================
+
+Frontend (React)          Backend (FastAPI)         MT5 Instances
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────┐
+│ Dashboard UI    │ ───▶ │ REST API        │ ───▶ │ Docker      │
+│ Trading Panel   │      │ WebSocket       │      │ Containers  │
+│ Notifications   │      │ Auth (JWT+API)  │      │ (mt5linux)  │
+│ Admin Panel     │      │ Rate Limiter    │      │             │
+└─────────────────┘      └────────┬────────┘      └─────────────┘
+                                  │
+                       ┌──────────┴──────────┐
+                       │    PostgreSQL/      │
+                       │     SQLite          │
+                       │ (Users, Alerts,     │
+                       │  Audit, Usage)      │
+                       └─────────────────────┘
+
+External Integrations
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Telegram    │ │ Webhooks    │ │ Stripe      │
+│ Bot API     │ │(TradingView)│ │ (Billing)   │
+└─────────────┘ └─────────────┘ └─────────────┘
+```
+
+## 📋 API Endpoints (40+)
+
+### Authentication
+- POST `/api/v1/auth/register` - Register new user
+- POST `/api/v1/auth/login` - JWT login
+- GET `/api/v1/auth/me` - Get current user
+- POST `/api/v1/users/api-keys` - Create API key
+- GET `/api/v1/users/api-keys` - List API keys
+
+### Trading
+- GET `/api/v1/trading/account` - Account info
+- GET `/api/v1/trading/positions` - Open positions
+- POST `/api/v1/trading/orders` - Place order
+- PUT `/api/v1/trading/positions/{id}/modify` - Modify SL/TP
+- POST `/api/v1/trading/positions/{id}/partial-close` - Partial close
+- GET `/api/v1/trading/symbols/{symbol}/candles` - Candle data
+- WS `/api/v1/trading/ticks` - Real-time ticks
+
+### Notifications
+- POST `/api/v1/notifications/telegram/configure` - Setup Telegram
+- POST `/api/v1/notifications/webhooks` - Add webhook
+- POST `/api/v1/notifications/alerts` - Create alert rule
+- GET `/api/v1/notifications/alerts` - List alerts
+
+### Instances
+- GET/POST `/api/v1/instances` - List/Create instances
+- POST `/api/v1/instances/{id}/start|stop|restart`
+- GET `/api/v1/instances/{id}/logs|stats`
+
+### VNC
+- GET `/api/v1/vnc/{id}/status` - VNC status
+- GET `/api/v1/vnc/{id}/vnc.html` - VNC viewer
+
+## 🚀 Quick Start
+
+### Development
 ```bash
-# Clone the repository
 git clone https://github.com/oyi77/mt5-router.git
 cd mt5-router
-
-# Copy environment file
-cp backend/.env.example .env
-
-# Start services
+cp .env.example .env
+# Edit .env with your settings
 docker-compose up -d
 ```
 
-### Default Credentials
+### Production
+```bash
+docker-compose --profile production up -d
+```
 
+### Default Credentials
 - Username: `admin`
 - Password: `admin123`
 
-> Change these in production!
+## 🔐 Authentication
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    mt-oc.aitradepulse.com                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Frontend (React)          Backend (FastAPI)                    │
-│   ┌─────────────────┐      ┌─────────────────┐                  │
-│   │ Dashboard UI    │ ───▶ │ REST API        │                  │
-│   │ VNC Viewer      │      │ WebSocket       │                  │
-│   │ Trading Panel   │      │ Auth (JWT)      │                  │
-│   └─────────────────┘      └────────┬────────┘                  │
-│                                      │                           │
-│                    ┌─────────────────┼─────────────────┐        │
-│                    │                 │                 │        │
-│              ┌─────▼─────┐   ┌──────▼──────┐   ┌─────▼─────┐  │
-│              │ Docker API │   │ mt5linux    │   │ psutil    │  │
-│              │ (Control)  │   │ (Trading)   │   │ (Metrics) │  │
-│              └─────┬─────┘   └──────┬──────┘   └─────┬─────┘  │
-│                    │                 │                 │        │
-│              ┌─────▼─────────────────▼─────────────────▼─────┐  │
-│              │            MT5 Docker Container                │  │
-│              │  ┌─────────────────┐  ┌─────────────────┐     │  │
-│              │  │ MetaTrader 5    │  │ noVNC           │     │  │
-│              │  │ (Port 18812)    │  │ (Port 6081)     │     │  │
-│              │  └─────────────────┘  └─────────────────┘     │  │
-│              └───────────────────────────────────────────────┘  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/login` - Login and get JWT token
-- `GET /api/v1/auth/me` - Get current user info
-
-### Instances
-- `GET /api/v1/instances` - List all MT5 instances
-- `POST /api/v1/instances` - Create new instance
-- `GET /api/v1/instances/{id}` - Get instance details
-- `POST /api/v1/instances/{id}/start` - Start instance
-- `POST /api/v1/instances/{id}/stop` - Stop instance
-- `POST /api/v1/instances/{id}/restart` - Restart instance
-- `DELETE /api/v1/instances/{id}` - Delete instance
-- `GET /api/v1/instances/{id}/logs` - Get instance logs
-- `GET /api/v1/instances/{id}/stats` - Get instance stats
-
-### VNC
-- `GET /api/v1/vnc/{id}/status` - Check VNC status
-- `GET /api/v1/vnc/{id}/vnc.html` - VNC viewer page
-
-### Trading
-- `GET /api/v1/trading/account` - Get account info
-- `GET /api/v1/trading/positions` - Get open positions
-- `POST /api/v1/trading/orders` - Place order
-- `POST /api/v1/trading/positions/{ticket}/close` - Close position
-- `GET /api/v1/trading/history` - Get deal history
-
-### Monitoring
-- `GET /api/v1/monitoring/system` - System metrics
-- `GET /api/v1/monitoring/instances` - Instance metrics
-- `WS /api/v1/monitoring/stream` - Real-time metrics WebSocket
-
-## Cloudflare Router Integration
-
-Add to your Cloudflare Router `mappings.yml`:
-
-```yaml
-mappings:
-  - subdomain: mt-oc
-    port: 8080
-    description: MT5 Control Dashboard
-    protocol: http
-    enabled: true
-```
-
-## Development
-
-### Backend
-
+### JWT Token
 ```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8080
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -d "username=admin&password=admin123"
 ```
 
-### Frontend
-
+### API Key
 ```bash
-cd frontend
-npm install
-npm run dev
+curl -H "X-API-Key: mtr_xxxxxxxxxxxx" \
+  http://localhost:8080/api/v1/trading/account
 ```
 
-## Security Notes
+## 📱 Telegram Notifications
+1. Create bot via @BotFather
+2. Get chat ID
+3. Configure via dashboard or API
 
-1. Change the default admin password immediately
-2. Update JWT_SECRET in production
-3. Enable HTTPS via Cloudflare
-4. Restrict Docker socket access in production
-5. Use environment-specific configurations
+## 📊 Alert Rules
+```json
+{
+  "alert_type": "price",
+  "symbol": "XAUUSD",
+  "condition": "greater_than",
+  "value": 2400,
+  "channel": "telegram"
+}
+```
 
-## License
+## 🔄 WebSocket Connections
+- `/api/v1/monitoring/stream` - Real-time system metrics
+- `/api/v1/trading/ticks` - Real-time price ticks
 
+## 📝 License
 MIT
+
+## 🔗 Links
+- [GitHub](https://github.com/oyi77/mt5-router)
+- [Issues](https://github.com/oyi77/mt5-router/issues)

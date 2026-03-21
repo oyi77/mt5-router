@@ -5,6 +5,31 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
+# Timeframe mapping for candle data
+TIMEFRAME_MAP = {
+    "M1": "TIMEFRAME_M1",
+    "M2": "TIMEFRAME_M2",
+    "M3": "TIMEFRAME_M3",
+    "M4": "TIMEFRAME_M4",
+    "M5": "TIMEFRAME_M5",
+    "M6": "TIMEFRAME_M6",
+    "M10": "TIMEFRAME_M10",
+    "M12": "TIMEFRAME_M12",
+    "M15": "TIMEFRAME_M15",
+    "M20": "TIMEFRAME_M20",
+    "M30": "TIMEFRAME_M30",
+    "H1": "TIMEFRAME_H1",
+    "H2": "TIMEFRAME_H2",
+    "H3": "TIMEFRAME_H3",
+    "H4": "TIMEFRAME_H4",
+    "H6": "TIMEFRAME_H6",
+    "H8": "TIMEFRAME_H8",
+    "H12": "TIMEFRAME_H12",
+    "D1": "TIMEFRAME_D1",
+    "W1": "TIMEFRAME_W1",
+    "MN1": "TIMEFRAME_MN1",
+}
+
 
 class MT5Service:
     def __init__(self, instance_id: str, host: str = "localhost"):
@@ -127,6 +152,7 @@ class MT5Service:
         order_type: str,
         volume: float,
         price: Optional[float] = None,
+        stop_price: Optional[float] = None,
         sl: Optional[float] = None,
         tp: Optional[float] = None,
         magic: int = 234000,
@@ -148,6 +174,8 @@ class MT5Service:
                 "SELL_LIMIT": mt5.ORDER_TYPE_SELL_LIMIT,
                 "BUY_STOP": mt5.ORDER_TYPE_BUY_STOP,
                 "SELL_STOP": mt5.ORDER_TYPE_SELL_STOP,
+                "BUY_STOP_LIMIT": mt5.ORDER_TYPE_BUY_STOP_LIMIT,
+                "SELL_STOP_LIMIT": mt5.ORDER_TYPE_SELL_STOP_LIMIT,
             }
 
             is_pending = order_type.upper() in [
@@ -155,7 +183,10 @@ class MT5Service:
                 "SELL_LIMIT",
                 "BUY_STOP",
                 "SELL_STOP",
+                "BUY_STOP_LIMIT",
+                "SELL_STOP_LIMIT",
             ]
+            is_stop_limit = order_type.upper() in ["BUY_STOP_LIMIT", "SELL_STOP_LIMIT"]
             action = mt5.TRADE_ACTION_PENDING if is_pending else mt5.TRADE_ACTION_DEAL
 
             request = {
@@ -170,6 +201,9 @@ class MT5Service:
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_RETURN,
             }
+
+            if is_stop_limit and stop_price is not None:
+                request["price_stoplimit"] = float(stop_price)
 
             if sl is not None:
                 request["sl"] = float(sl)
@@ -259,7 +293,14 @@ class MT5Service:
             if not orders:
                 return []
 
-            type_map = {2: "BUY_LIMIT", 3: "SELL_LIMIT", 4: "BUY_STOP", 5: "SELL_STOP"}
+            type_map = {
+                2: "BUY_LIMIT",
+                3: "SELL_LIMIT",
+                4: "BUY_STOP",
+                5: "SELL_STOP",
+                6: "BUY_STOP_LIMIT",
+                7: "SELL_STOP_LIMIT",
+            }
 
             return [
                 {
@@ -337,3 +378,224 @@ class MT5Service:
         except Exception as e:
             logger.error(f"Error getting history: {e}")
             return []
+
+    def modify_position(
+        self, ticket: int, sl: Optional[float] = None, tp: Optional[float] = None
+    ) -> bool:
+        try:
+            mt5 = self._connect()
+            request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "position": ticket,
+                "comment": "mt5-router-modify",
+            }
+            if sl is not None:
+                request["sl"] = float(sl)
+            if tp is not None:
+                request["tp"] = float(tp)
+            result = mt5.order_send(request)
+            return result and result.retcode == mt5.TRADE_RETCODE_DONE
+        except Exception as e:
+            logger.error(f"Error modifying position {ticket}: {e}")
+            return False
+
+    def partial_close_position(
+        self, ticket: int, volume: float
+    ) -> Optional[Dict[str, Any]]:
+        try:
+            mt5 = self._connect()
+            positions = mt5.positions_get()
+            if not positions:
+                return None
+
+            pos = next((p for p in positions if p.ticket == ticket), None)
+            if not pos:
+                return None
+
+            if volume >= float(pos.volume):
+                logger.error(
+                    f"Partial close volume {volume} >= position volume {pos.volume}"
+                )
+                return None
+
+            tick = mt5.symbol_info_tick(pos.symbol)
+            if not tick:
+                return None
+
+            close_type = (
+                mt5.ORDER_TYPE_SELL
+                if pos.type == mt5.ORDER_TYPE_BUY
+                else mt5.ORDER_TYPE_BUY
+            )
+            price = tick.bid if pos.type == mt5.ORDER_TYPE_BUY else tick.ask
+
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": pos.symbol,
+                "volume": float(volume),
+                "type": close_type,
+                "position": ticket,
+                "price": float(price),
+                "deviation": 20,
+                "magic": 234000,
+                "comment": "mt5-router-partial-close",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_RETURN,
+            }
+
+            result = mt5.order_send(request)
+            if result and result.retcode == mt5.TRADE_RETCODE_DONE:
+                return {
+                    "ticket": ticket,
+                    "closed_volume": volume,
+                    "remaining_volume": float(pos.volume) - volume,
+                    "price": float(price),
+                    "status": "partial_closed",
+                }
+            logger.error(
+                f"Partial close failed: {result.comment if result else 'No result'}"
+            )
+            return None
+        except Exception as e:
+            logger.error(f"Error partial closing position {ticket}: {e}")
+            return None
+
+    def modify_pending_order(
+        self,
+        ticket: int,
+        price: Optional[float] = None,
+        sl: Optional[float] = None,
+        tp: Optional[float] = None,
+    ) -> bool:
+        try:
+            mt5 = self._connect()
+            orders = mt5.orders_get()
+            if not orders:
+                return False
+
+            order = next((o for o in orders if o.ticket == ticket), None)
+            if not order:
+                return False
+
+            request = {
+                "action": mt5.TRADE_ACTION_MODIFY,
+                "order": ticket,
+                "price": float(price) if price is not None else float(order.price_open),
+                "comment": "mt5-router-modify-order",
+            }
+            if sl is not None:
+                request["sl"] = float(sl)
+            if tp is not None:
+                request["tp"] = float(tp)
+
+            result = mt5.order_send(request)
+            return result and result.retcode == mt5.TRADE_RETCODE_DONE
+        except Exception as e:
+            logger.error(f"Error modifying pending order {ticket}: {e}")
+            return False
+
+    def get_current_tick(self, symbol: str) -> Optional[Dict[str, Any]]:
+        try:
+            mt5 = self._connect()
+            tick = mt5.symbol_info_tick(symbol)
+            if tick:
+                return {
+                    "symbol": symbol,
+                    "bid": float(tick.bid),
+                    "ask": float(tick.ask),
+                    "last": float(tick.last),
+                    "volume": int(tick.volume),
+                    "time": datetime.fromtimestamp(tick.time).isoformat(),
+                    "flags": tick.flags,
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Error getting tick for {symbol}: {e}")
+            return None
+
+    def get_candle_data(
+        self, symbol: str, timeframe: str = "M1", count: int = 100
+    ) -> List[Dict[str, Any]]:
+        try:
+            mt5 = self._connect()
+            tf_attr = TIMEFRAME_MAP.get(timeframe.upper())
+            if not tf_attr:
+                logger.error(f"Invalid timeframe: {timeframe}")
+                return []
+
+            tf = getattr(mt5, tf_attr, None)
+            if tf is None:
+                logger.error(f"Timeframe not available: {timeframe}")
+                return []
+
+            rates = mt5.copy_rates_from_pos(symbol, tf, 0, count)
+            if rates is None or len(rates) == 0:
+                return []
+
+            return [
+                {
+                    "time": datetime.fromtimestamp(int(rate["time"])).isoformat(),
+                    "open": float(rate["open"]),
+                    "high": float(rate["high"]),
+                    "low": float(rate["low"]),
+                    "close": float(rate["close"]),
+                    "tick_volume": int(rate["tick_volume"]),
+                    "spread": int(rate["spread"]),
+                }
+                for rate in rates
+            ]
+        except Exception as e:
+            logger.error(f"Error getting candle data for {symbol}: {e}")
+            return []
+
+    def get_order_book(self, symbol: str) -> Optional[Dict[str, Any]]:
+        try:
+            mt5 = self._connect()
+            book = mt5.market_book_get(symbol)
+            if book is None:
+                return None
+
+            bids = []
+            asks = []
+            for item in book:
+                level = {
+                    "type": "buy" if item.type == mt5.BOOK_TYPE_BUY else "sell",
+                    "price": float(item.price),
+                    "volume": float(item.volume),
+                    "count": int(item.count),
+                }
+                if item.type == mt5.BOOK_TYPE_BUY:
+                    bids.append(level)
+                else:
+                    asks.append(level)
+
+            return {
+                "symbol": symbol,
+                "timestamp": datetime.now().isoformat(),
+                "bids": bids,
+                "asks": asks,
+            }
+        except Exception as e:
+            logger.error(f"Error getting order book for {symbol}: {e}")
+            return None
+
+    def subscribe_to_ticks(self, symbols: List[str]) -> bool:
+        try:
+            mt5 = self._connect()
+            for symbol in symbols:
+                if not mt5.symbol_select(symbol, True):
+                    logger.warning(f"Failed to select symbol: {symbol}")
+            return True
+        except Exception as e:
+            logger.error(f"Error subscribing to ticks: {e}")
+            return False
+
+    def unsubscribe_from_ticks(self, symbols: List[str]) -> bool:
+        try:
+            mt5 = self._connect()
+            for symbol in symbols:
+                mt5.symbol_select(symbol, False)
+            return True
+        except Exception as e:
+            logger.error(f"Error unsubscribing from ticks: {e}")
+            return False

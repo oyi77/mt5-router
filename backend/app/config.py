@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/mt5router.db"
     METRICS_INTERVAL: int = 10
     ALERT_COOLDOWN: int = 300
+    API_KEY_PREFIX: str = "mtr_"
+    RATE_LIMIT_PER_MINUTE: int = 100
+    ENCRYPTION_KEY: str = "your-fernet-key-here"
 
     class Config:
         env_file = ".env"

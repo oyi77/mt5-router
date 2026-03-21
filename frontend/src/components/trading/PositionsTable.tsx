@@ -1,18 +1,46 @@
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Position } from "@/api/trading"
 import { formatNumber, formatCurrency } from "@/lib/utils"
-import { X, TrendingUp, TrendingDown } from "lucide-react"
+import { X, TrendingUp, TrendingDown, Settings, SplitSquareHorizontal } from "lucide-react"
 
 interface PositionsTableProps {
   positions: Position[]
   onClosePosition: (ticket: number) => void
+  onModifyPosition?: (ticket: number, sl: number | null, tp: number | null) => void
+  onPartialClose?: (ticket: number, volume: number) => void
   isLoading?: boolean
 }
 
-export function PositionsTable({ positions, onClosePosition, isLoading }: PositionsTableProps) {
+export function PositionsTable({ positions, onClosePosition, onModifyPosition, onPartialClose, isLoading }: PositionsTableProps) {
   const totalPnL = positions.reduce((sum, pos) => sum + pos.profit, 0)
+  const [modifyDialog, setModifyDialog] = useState<{ ticket: number; sl: number | null; tp: number | null } | null>(null)
+  const [partialCloseDialog, setPartialCloseDialog] = useState<{ ticket: number; volume: number } | null>(null)
+  const [slValue, setSlValue] = useState('')
+  const [tpValue, setTpValue] = useState('')
+  const [partialVolume, setPartialVolume] = useState('')
+
+  const handleModifySubmit = () => {
+    if (modifyDialog && onModifyPosition) {
+      const sl = slValue ? parseFloat(slValue) : null
+      const tp = tpValue ? parseFloat(tpValue) : null
+      onModifyPosition(modifyDialog.ticket, sl, tp)
+      setModifyDialog(null)
+      setSlValue('')
+      setTpValue('')
+    }
+  }
+
+  const handlePartialCloseSubmit = () => {
+    if (partialCloseDialog && onPartialClose && partialVolume) {
+      onPartialClose(partialCloseDialog.ticket, parseFloat(partialVolume))
+      setPartialCloseDialog(null)
+      setPartialVolume('')
+    }
+  }
 
   return (
     <Card>
@@ -70,19 +98,112 @@ export function PositionsTable({ positions, onClosePosition, isLoading }: Positi
                       {pos.tp ? formatNumber(pos.tp) : '-'}
                     </td>
                     <td className="py-2 px-2 text-center">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => onClosePosition(pos.ticket)}
-                        disabled={isLoading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setModifyDialog({ ticket: pos.ticket, sl: pos.sl, tp: pos.tp })
+                            setSlValue(pos.sl?.toString() || '')
+                            setTpValue(pos.tp?.toString() || '')
+                          }}
+                          title="Modify SL/TP"
+                        >
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPartialCloseDialog({ ticket: pos.ticket, volume: pos.volume })}
+                          title="Partial Close"
+                        >
+                          <SplitSquareHorizontal className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => onClosePosition(pos.ticket)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {modifyDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-card p-6 rounded-lg border shadow-lg w-96">
+              <h3 className="text-lg font-semibold mb-4">Modify Position #{modifyDialog.ticket}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Stop Loss</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    placeholder="SL Price"
+                    value={slValue}
+                    onChange={(e) => setSlValue(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Take Profit</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    placeholder="TP Price"
+                    value={tpValue}
+                    onChange={(e) => setTpValue(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setModifyDialog(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleModifySubmit}>
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {partialCloseDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-card p-6 rounded-lg border shadow-lg w-96">
+              <h3 className="text-lg font-semibold mb-4">Partial Close #{partialCloseDialog.ticket}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Volume to Close</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={partialCloseDialog.volume}
+                    placeholder={`Max: ${partialCloseDialog.volume}`}
+                    value={partialVolume}
+                    onChange={(e) => setPartialVolume(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Position volume: {formatNumber(partialCloseDialog.volume)}
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setPartialCloseDialog(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handlePartialCloseSubmit} disabled={!partialVolume}>
+                    Close Partial
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

@@ -66,6 +66,39 @@ export interface SymbolInfo {
   trade_allowed: boolean
 }
 
+export interface ModifyPositionRequest {
+  sl?: number
+  tp?: number
+}
+
+export interface PartialCloseRequest {
+  volume: number
+}
+
+export interface CandleData {
+  time: string
+  open: number
+  high: number
+  low: number
+  close: number
+  tick_volume: number
+  spread: number
+}
+
+export interface OrderBookLevel {
+  type: 'buy' | 'sell'
+  price: number
+  volume: number
+  count: number
+}
+
+export interface OrderBookData {
+  symbol: string
+  timestamp: string
+  bids: OrderBookLevel[]
+  asks: OrderBookLevel[]
+}
+
 export const tradingApi = {
   getAccount: (instanceId: string) =>
     api.get<AccountInfo>(`/trading/account?instance_id=${instanceId}`),
@@ -90,4 +123,23 @@ export const tradingApi = {
   
   getHistory: (instanceId: string, symbol?: string, days = 30) =>
     api.get<any[]>(`/trading/history?instance_id=${instanceId}${symbol ? `&symbol=${symbol}` : ''}&days=${days}`),
+  
+  modifyPosition: (instanceId: string, ticket: number, data: ModifyPositionRequest) =>
+    api.put<{ status: string }>(`/trading/positions/${ticket}/modify?instance_id=${instanceId}`, data),
+  
+  partialClosePosition: (instanceId: string, ticket: number, volume: number) =>
+    api.post<{ status: string; closed_volume: number }>(
+      `/trading/positions/${ticket}/partial-close?instance_id=${instanceId}&volume=${volume}`
+    ),
+  
+  modifyOrder: (instanceId: string, ticket: number, data: { price?: number; sl?: number; tp?: number }) =>
+    api.put<{ status: string }>(`/trading/orders/${ticket}/modify?instance_id=${instanceId}`, data),
+  
+  getCandles: (instanceId: string, symbol: string, timeframe: string = "M1", count: number = 100) =>
+    api.get<CandleData[]>(
+      `/trading/symbols/${symbol}/candles?instance_id=${instanceId}&timeframe=${timeframe}&count=${count}`
+    ),
+  
+  getOrderBook: (instanceId: string, symbol: string) =>
+    api.get<OrderBookData>(`/trading/symbols/${symbol}/depth?instance_id=${instanceId}`),
 }

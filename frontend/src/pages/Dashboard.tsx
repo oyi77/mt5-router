@@ -9,11 +9,12 @@ import { MetricsPanel } from "@/components/dashboard/MetricsPanel"
 import { AccountCard } from "@/components/trading/AccountCard"
 import { PositionsTable } from "@/components/trading/PositionsTable"
 import { VNCViewer } from "@/components/vnc/VNCViewer"
+import { NotificationsPanel } from "@/components/notifications/NotificationsPanel"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Server, Plus, RefreshCw, Activity, Wallet, Monitor,
-  LogOut
+  LogOut, Bell
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -72,6 +73,18 @@ export function Dashboard() {
 
   const closePosition = useMutation({
     mutationFn: (ticket: number) => tradingApi.closePosition(selectedInstance!, ticket),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['positions', selectedInstance] }),
+  })
+
+  const modifyPosition = useMutation({
+    mutationFn: ({ ticket, sl, tp }: { ticket: number; sl: number | null; tp: number | null }) =>
+      tradingApi.modifyPosition(selectedInstance!, ticket, { sl: sl ?? undefined, tp: tp ?? undefined }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['positions', selectedInstance] }),
+  })
+
+  const partialClosePosition = useMutation({
+    mutationFn: ({ ticket, volume }: { ticket: number; volume: number }) =>
+      tradingApi.partialClosePosition(selectedInstance!, ticket, volume),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['positions', selectedInstance] }),
   })
 
@@ -153,6 +166,10 @@ export function Dashboard() {
               <Activity className="h-4 w-4 mr-2" />
               Monitoring
             </TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="h-4 w-4 mr-2" />
+              Notifications
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="instances">
@@ -228,7 +245,9 @@ export function Dashboard() {
               <PositionsTable
                 positions={positions}
                 onClosePosition={(ticket) => closePosition.mutate(ticket)}
-                isLoading={closePosition.isPending}
+                onModifyPosition={(ticket, sl, tp) => modifyPosition.mutate({ ticket, sl, tp })}
+                onPartialClose={(ticket, volume) => partialClosePosition.mutate({ ticket, volume })}
+                isLoading={closePosition.isPending || modifyPosition.isPending || partialClosePosition.isPending}
               />
             </div>
           </TabsContent>
@@ -252,6 +271,10 @@ export function Dashboard() {
               systemMetrics={systemMetrics}
               instanceMetrics={instanceMetrics}
             />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationsPanel />
           </TabsContent>
         </Tabs>
       </main>
