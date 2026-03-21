@@ -1,0 +1,38 @@
+# Cloudflare Tunnel Configuration for MT5 Router SaaS
+# ====================================================
+#
+# This config enables:
+# - mt-oc.aitradepulse.com -> MT5 Router Dashboard (port 8080)
+# - *.mt-oc.aitradepulse.com -> Dynamic MT5 Instances (VNC, API)
+#
+# Usage:
+# 1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
+# 2. Create tunnel: cloudflared tunnel create mt5-router
+# 3. Configure: Copy this as ~/.cloudflared/config.yml
+# 4. Route DNS: cloudflared tunnel route dns mt5-router mt-oc.aitradepulse.com
+# 5. Run: cloudflared tunnel --config ~/.cloudflared/config.yml run
+#
+# For wildcard subdomains:
+# cloudflared tunnel route dns mt5-router "*.mt-oc.aitradepulse.com"
+
+tunnel: mt5-router
+credentials-file: /root/.cloudflared/your-tunnel-uuid.json
+
+# Ingress rules - order matters! First match wins
+ingress:
+  # MT5 Router Dashboard
+  - hostname: mt-oc.aitradepulse.com
+    service: http://localhost:8080
+    originRequest:
+      noTLSVerify: false
+      connectTimeout: 30s
+
+  # Individual MT5 Instance VNC (e.g., instance1.mt-oc.aitradepulse.com -> localhost:6081)
+  - hostname: "*.mt-oc.aitradepulse.com"
+    service: http://localhost:6081
+    originRequest:
+      noTLSVerify: false
+      connectTimeout: 30s
+
+  # Catch-all - return 404 for unmatched
+  - service: http_status:404
