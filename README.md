@@ -11,7 +11,9 @@ A powerful, self-hosted dashboard for managing MetaTrader 5 instances with VNC a
 - **Partial Close**: Close partial position volume
 - **Real-time Streaming**: WebSocket for live quotes, candles, ticks
 - **Trade History**: Full deal history with configurable periods
-- **Copy Trading**: Strategy provider/subscriber architecture (Coming Soon)
+- **Copy Trading**: Strategy provider/subscriber architecture
+- **Trading Statistics**: Performance metrics, equity curves, symbol breakdown
+- **MT5 Accounts**: Connect/disconnect multiple MT5 accounts with encrypted credentials
 
 ### Instance Management
 - **Docker Control**: Create, Start, Stop, Restart, Delete MT5 containers
@@ -147,6 +149,30 @@ Multi-Server Architecture
 - POST `/api/v1/notifications/webhooks` - Add webhook
 - POST `/api/v1/notifications/alerts` - Create alert rule
 - GET `/api/v1/notifications/alerts` - List alerts
+
+### MT5 Accounts
+- GET/POST `/api/v1/accounts` - List/Create MT5 accounts
+- DELETE `/api/v1/accounts/{id}` - Delete account
+- POST `/api/v1/accounts/{id}/connect` - Connect to broker
+- POST `/api/v1/accounts/{id}/disconnect` - Disconnect from broker
+
+### Copy Trading
+- GET/POST `/api/v1/copy/strategies` - List/Create strategies
+- GET/POST `/api/v1/copy/subscribers` - List/Create subscribers
+- GET `/api/v1/copy/signals` - Get signals
+
+### Trading Statistics
+- GET `/api/v1/stats/summary` - Overall performance metrics
+- GET `/api/v1/stats/daily` - Daily breakdown
+- GET `/api/v1/stats/symbols` - Per-symbol stats
+- GET `/api/v1/stats/equity-curve` - Equity curve data
+
+### Webhooks
+- GET `/api/v1/webhooks` - List webhooks
+- POST `/api/v1/webhooks/configure` - Configure webhook
+- POST `/api/v1/webhooks/receive` - Receive external signals
+- DELETE `/api/v1/webhooks/{id}` - Delete webhook
+- POST `/api/v1/webhooks/test/{id}` - Test webhook
 
 ### Instances
 - GET/POST `/api/v1/instances` - List/Create instances
