@@ -35,6 +35,18 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = ""
     BASE_URL: str = "https://mt-oc.aitradepulse.com"
 
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str = ""
+
+    # Database pooling
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+
     class Config:
         env_file = ".env"
 
