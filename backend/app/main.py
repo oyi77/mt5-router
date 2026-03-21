@@ -16,6 +16,7 @@ from app.api import (
     billing,
     accounts,
     copytrading,
+    statistics,
 )
 from app.models.database import Base
 from app.core.database import engine
@@ -66,6 +67,9 @@ app.include_router(servers.router, prefix="/api/v1/servers", tags=["Servers"])
 app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
 app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["MT5 Accounts"])
 app.include_router(copytrading.router, prefix="/api/v1/copy", tags=["Copy Trading"])
+app.include_router(
+    statistics.router, prefix="/api/v1/stats", tags=["Trading Statistics"]
+)
 
 
 @app.get("/health")

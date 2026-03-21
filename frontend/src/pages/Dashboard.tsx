@@ -13,11 +13,12 @@ import { NotificationsPanel } from "@/components/notifications/NotificationsPane
 import { ServersPanel } from "@/components/servers/ServersPanel"
 import { BillingPanel } from "@/components/billing/BillingPanel"
 import { AccountsPanel } from "@/components/accounts/AccountsPanel"
+import { StatisticsPanel } from "@/components/statistics/StatisticsPanel"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Server, Plus, RefreshCw, Activity, Wallet, Monitor,
-  LogOut, Bell, CreditCard, Key
+  LogOut, Bell, CreditCard, Key, BarChart3
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -185,6 +186,10 @@ export function Dashboard() {
               <Key className="h-4 w-4 mr-2" />
               Accounts
             </TabsTrigger>
+            <TabsTrigger value="statistics">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Statistics
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="instances">
@@ -297,6 +302,10 @@ export function Dashboard() {
 
           <TabsContent value="accounts">
             <AccountsPanel />
+          </TabsContent>
+
+          <TabsContent value="statistics">
+            <StatisticsPanel instanceId={selectedInstance || ''} />
           </TabsContent>
         </Tabs>
       </main>
