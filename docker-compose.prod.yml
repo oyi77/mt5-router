@@ -42,22 +42,6 @@ services:
     networks:
       - mt5-network
 
-  nginx:
-    image: nginx:alpine
-    container_name: mt5-router-nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - mt5-network
-
 volumes:
   postgres_data:
   redis_data:
