@@ -17,6 +17,7 @@ from app.api import (
     accounts,
     copytrading,
     statistics,
+    webhooks,
 )
 from app.models.database import Base
 from app.core.database import engine
@@ -70,6 +71,7 @@ app.include_router(copytrading.router, prefix="/api/v1/copy", tags=["Copy Tradin
 app.include_router(
     statistics.router, prefix="/api/v1/stats", tags=["Trading Statistics"]
 )
+app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 
 
 @app.get("/health")

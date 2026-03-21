@@ -14,11 +14,12 @@ import { ServersPanel } from "@/components/servers/ServersPanel"
 import { BillingPanel } from "@/components/billing/BillingPanel"
 import { AccountsPanel } from "@/components/accounts/AccountsPanel"
 import { StatisticsPanel } from "@/components/statistics/StatisticsPanel"
+import { WebhooksPanel } from "@/components/webhooks/WebhooksPanel"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Server, Plus, RefreshCw, Activity, Wallet, Monitor,
-  LogOut, Bell, CreditCard, Key, BarChart3
+  LogOut, Bell, CreditCard, Key, BarChart3, Webhook
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -182,14 +183,18 @@ export function Dashboard() {
               <CreditCard className="h-4 w-4 mr-2" />
               Billing
             </TabsTrigger>
-            <TabsTrigger value="accounts">
-              <Key className="h-4 w-4 mr-2" />
-              Accounts
-            </TabsTrigger>
-            <TabsTrigger value="statistics">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Statistics
-            </TabsTrigger>
+          <TabsTrigger value="accounts">
+            <Key className="h-4 w-4 mr-2" />
+            Accounts
+          </TabsTrigger>
+          <TabsTrigger value="statistics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Statistics
+          </TabsTrigger>
+          <TabsTrigger value="webhooks">
+            <Webhook className="h-4 w-4 mr-2" />
+            Webhooks
+          </TabsTrigger>
           </TabsList>
 
           <TabsContent value="instances">
@@ -306,6 +311,10 @@ export function Dashboard() {
 
           <TabsContent value="statistics">
             <StatisticsPanel instanceId={selectedInstance || ''} />
+          </TabsContent>
+
+          <TabsContent value="webhooks">
+            <WebhooksPanel />
           </TabsContent>
         </Tabs>
       </main>
