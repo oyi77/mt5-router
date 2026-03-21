@@ -1,4 +1,10 @@
 import pytest
+import os
+
+os.environ["ENCRYPTION_KEY"] = "PjUlJFLvVYFFr3unXRRN1rlLdPQ4kgMWrvUaZE7vB-A="
+os.environ["STRIPE_SECRET_KEY"] = ""
+os.environ["STRIPE_WEBHOOK_SECRET"] = ""
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
