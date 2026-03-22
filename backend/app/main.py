@@ -5,6 +5,7 @@ import logging
 
 from app.config import settings
 from app.api import (
+    admin,
     instances,
     vnc,
     trading,
@@ -23,6 +24,7 @@ from app.models.database import Base
 from app.core.database import engine
 from app.services.ssh_service import init_ssh_service
 from app.services.billing_service import init_billing_service
+from app.services.metrics_collector import start_metrics_collector, stop_metrics_collector
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +43,11 @@ async def lifespan(app: FastAPI):
         init_billing_service(settings.STRIPE_SECRET_KEY, settings.STRIPE_WEBHOOK_SECRET)
         logger.info("Billing service initialized")
 
+    start_metrics_collector(interval=60)
+    logger.info("Metrics collector started")
+
     yield
+    stop_metrics_collector()
     logger.info("Shutting down...")
 
 
@@ -72,6 +78,7 @@ app.include_router(
     statistics.router, prefix="/api/v1/stats", tags=["Trading Statistics"]
 )
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 
 @app.get("/health")

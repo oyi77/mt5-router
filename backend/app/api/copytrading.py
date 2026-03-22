@@ -15,7 +15,7 @@ from app.models.database import (
 )
 from app.auth.jwt import get_current_user
 
-router = APIRouter(prefix="/api/v1/copy", tags=["Copy Trading"])
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
@@ -92,7 +92,7 @@ async def create_strategy(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     strategy = CopyStrategy(
         user_id=user_id,
         name=request.name,
@@ -111,7 +111,7 @@ async def create_strategy(
 async def list_strategies(
     user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     strategies = db.query(CopyStrategy).filter(CopyStrategy.user_id == user_id).all()
     return [strategy_to_response(s) for s in strategies]
 
@@ -120,7 +120,7 @@ async def list_strategies(
 async def get_strategy(
     id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     strategy = (
         db.query(CopyStrategy)
         .filter(CopyStrategy.id == id, CopyStrategy.user_id == user_id)
@@ -140,7 +140,7 @@ async def update_strategy(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     strategy = (
         db.query(CopyStrategy)
         .filter(CopyStrategy.id == id, CopyStrategy.user_id == user_id)
@@ -165,7 +165,7 @@ async def update_strategy(
 async def delete_strategy(
     id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     strategy = (
         db.query(CopyStrategy)
         .filter(CopyStrategy.id == id, CopyStrategy.user_id == user_id)
@@ -185,7 +185,7 @@ async def create_subscriber(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     strategy = (
         db.query(CopyStrategy).filter(CopyStrategy.id == request.strategy_id).first()
@@ -210,7 +210,7 @@ async def create_subscriber(
 async def list_subscribers(
     user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     subscribers = (
         db.query(CopySubscriber).filter(CopySubscriber.user_id == user_id).all()
     )
@@ -221,7 +221,7 @@ async def list_subscribers(
 async def delete_subscriber(
     id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     subscriber = (
         db.query(CopySubscriber)
         .filter(CopySubscriber.id == id, CopySubscriber.user_id == user_id)

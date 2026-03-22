@@ -349,6 +349,21 @@ class CopyPosition(Base):
     subscriber = relationship("CopySubscriber", back_populates="positions")
 
 
+class InstanceMetrics(Base):
+    __tablename__ = "instance_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    instance_id = Column(String(100), index=True, nullable=False)
+    instance_name = Column(String(255))
+    cpu_percent = Column(Float, default=0)
+    memory_usage_mb = Column(Float, default=0)
+    memory_limit_mb = Column(Float, default=0)
+    memory_percent = Column(Float, default=0)
+    network_rx_mb = Column(Float, default=0)
+    network_tx_mb = Column(Float, default=0)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+
+
 class WebhookConfig(Base):
     __tablename__ = "webhook_configs"
 

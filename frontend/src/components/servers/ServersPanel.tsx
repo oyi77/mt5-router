@@ -10,6 +10,7 @@ import {
   Server, Plus, RefreshCw, Trash2, Activity, 
   Cpu, HardDrive, MemoryStick, ChevronDown, ChevronUp 
 } from 'lucide-react'
+import { ServerMetricsChart } from '@/components/servers/ServerMetricsChart'
 import { cn } from '@/lib/utils'
 
 export function ServersPanel() {
@@ -266,6 +267,11 @@ export function ServersPanel() {
                         </div>
                       </div>
                     )}
+
+                    <div className="mt-4 border-t pt-2">
+                      <h4 className="text-sm font-medium mb-1">Metrics History</h4>
+                      <ServerMetricsChart serverId={server.id} />
+                    </div>
                   </CardContent>
                 )}
               </Card>

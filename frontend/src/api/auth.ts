@@ -14,14 +14,10 @@ interface User {
 
 export const authApi = {
   login: async (username: string, password: string): Promise<LoginResponse> => {
-    const formData = new URLSearchParams()
-    formData.append('username', username)
-    formData.append('password', password)
-    
     const response = await fetch('/api/v1/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
     })
     
     if (!response.ok) {

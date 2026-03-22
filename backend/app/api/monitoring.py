@@ -1,9 +1,13 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from sqlalchemy.orm import Session
 import asyncio
 import docker
 import psutil
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from app.core.database import get_db
+from app.models.database import ServerMetrics, InstanceMetrics
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -136,6 +140,70 @@ async def metrics_stream(websocket: WebSocket):
         logger.info("Metrics stream disconnected")
     except Exception as e:
         logger.error(f"Metrics stream error: {e}")
+
+
+@router.get("/servers/{server_id}/metrics")
+async def get_server_metrics_history(
+    server_id: int,
+    hours: int = Query(default=24, ge=1, le=720),
+    db: Session = Depends(get_db),
+):
+    cutoff = datetime.utcnow() - timedelta(hours=hours)
+    records = (
+        db.query(ServerMetrics)
+        .filter(ServerMetrics.server_id == server_id)
+        .filter(ServerMetrics.recorded_at >= cutoff)
+        .order_by(ServerMetrics.recorded_at)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "server_id": r.server_id,
+            "cpu_percent": r.cpu_percent,
+            "memory_total_mb": r.memory_total_mb,
+            "memory_used_mb": r.memory_used_mb,
+            "disk_total_gb": r.disk_total_gb,
+            "disk_used_gb": r.disk_used_gb,
+            "network_rx_mb": r.network_rx_mb,
+            "network_tx_mb": r.network_tx_mb,
+            "docker_containers_total": r.docker_containers_total,
+            "docker_containers_running": r.docker_containers_running,
+            "recorded_at": r.recorded_at.isoformat() if r.recorded_at else None,
+        }
+        for r in records
+    ]
+
+
+@router.get("/instances/{instance_id}/metrics")
+async def get_instance_metrics_history(
+    instance_id: str,
+    hours: int = Query(default=24, ge=1, le=720),
+    db: Session = Depends(get_db),
+):
+    cutoff = datetime.utcnow() - timedelta(hours=hours)
+    records = (
+        db.query(InstanceMetrics)
+        .filter(InstanceMetrics.instance_id == instance_id)
+        .filter(InstanceMetrics.recorded_at >= cutoff)
+        .order_by(InstanceMetrics.recorded_at)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "instance_id": r.instance_id,
+            "instance_name": r.instance_name,
+            "cpu_percent": r.cpu_percent,
+            "memory_usage_mb": r.memory_usage_mb,
+            "memory_limit_mb": r.memory_limit_mb,
+            "memory_percent": r.memory_percent,
+            "network_rx_mb": r.network_rx_mb,
+            "network_tx_mb": r.network_tx_mb,
+            "recorded_at": r.recorded_at.isoformat() if r.recorded_at else None,
+        }
+        for r in records
+    ]
 
 
 @router.get("/alerts")

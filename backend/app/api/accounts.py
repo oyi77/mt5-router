@@ -11,7 +11,7 @@ from app.auth.jwt import get_current_user
 from app.services.encryption import encryption_service
 from app.services.mt5_service import MT5Service
 
-router = router = APIRouter(prefix="/api/v1/accounts", tags=["MT5 Accounts"])
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
@@ -70,7 +70,7 @@ async def create_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -100,7 +100,7 @@ async def create_account(
 async def list_accounts(
     user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -114,7 +114,7 @@ async def get_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     account = (
         db.query(MT5Account)
@@ -135,7 +135,7 @@ async def update_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     account = (
         db.query(MT5Account)
@@ -166,7 +166,7 @@ async def delete_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     account = (
         db.query(MT5Account)
@@ -189,7 +189,7 @@ async def connect_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     account = (
         db.query(MT5Account)
@@ -249,7 +249,7 @@ async def disconnect_account(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     account = (
         db.query(MT5Account)

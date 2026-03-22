@@ -10,7 +10,7 @@ from app.models.database import MT5Account
 from app.auth.jwt import get_current_user
 from app.services.mt5_service import MT5Service
 
-router = APIRouter(prefix="/api/v1/stats", tags=["Trading Statistics"])
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 

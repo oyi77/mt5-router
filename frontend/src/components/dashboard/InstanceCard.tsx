@@ -4,29 +4,33 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import { Instance, InstanceStats } from '@/api/instances'
-import { Play, Square, RotateCcw, Trash2, Monitor, Terminal } from 'lucide-react'
+import { Play, Square, RotateCcw, Trash2, Monitor, Terminal, Loader2 } from 'lucide-react'
 
 interface InstanceCardProps {
   instance: Instance
   stats?: InstanceStats
+  isActionLoading?: boolean
   onStart?: () => void
   onStop?: () => void
   onRestart?: () => void
   onDelete?: () => void
   onVNC?: () => void
   onLogs?: () => void
+  onClick?: () => void
   className?: string
 }
 
 export function InstanceCard({
   instance,
   stats,
+  isActionLoading = false,
   onStart,
   onStop,
   onRestart,
   onDelete,
   onVNC,
   onLogs,
+  onClick,
   className,
 }: InstanceCardProps) {
   const statusVariant = {
@@ -44,7 +48,7 @@ export function InstanceCard({
   }
 
   return (
-    <Card className={cn('', className)}>
+    <Card className={cn('', className)} onClick={onClick}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -55,6 +59,7 @@ export function InstanceCard({
             {instance.status}
           </Badge>
         </div>
+        <p className="text-xs text-muted-foreground font-mono mt-1">{instance.id.substring(0, 12)}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {stats && (
@@ -84,22 +89,22 @@ export function InstanceCard({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
           {instance.status === 'stopped' && onStart && (
-            <Button size="sm" variant="outline" onClick={onStart}>
-              <Play className="h-4 w-4 mr-1" />
+            <Button size="sm" variant="outline" onClick={onStart} disabled={isActionLoading}>
+              {isActionLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1" />}
               Start
             </Button>
           )}
           {instance.status === 'running' && onStop && (
-            <Button size="sm" variant="outline" onClick={onStop}>
-              <Square className="h-4 w-4 mr-1" />
+            <Button size="sm" variant="outline" onClick={onStop} disabled={isActionLoading}>
+              {isActionLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Square className="h-4 w-4 mr-1" />}
               Stop
             </Button>
           )}
           {instance.status === 'running' && onRestart && (
-            <Button size="sm" variant="outline" onClick={onRestart}>
-              <RotateCcw className="h-4 w-4 mr-1" />
+            <Button size="sm" variant="outline" onClick={onRestart} disabled={isActionLoading}>
+              {isActionLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-1" />}
               Restart
             </Button>
           )}
@@ -116,7 +121,7 @@ export function InstanceCard({
             </Button>
           )}
           {onDelete && (
-            <Button size="sm" variant="destructive" onClick={onDelete}>
+            <Button size="sm" variant="destructive" onClick={onDelete} disabled={isActionLoading}>
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
             </Button>

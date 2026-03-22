@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { useMT5Accounts, MT5Account, CreateAccountRequest } from '@/api/accounts'
+import { useMT5Accounts, CreateAccountRequest } from '@/api/accounts'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Plus, RefreshCw, Trash2, Power, PowerOff, Server } from 'lucide-react'
 
 export function AccountsPanel() {
@@ -95,7 +96,30 @@ export function AccountsPanel() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading accounts...</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-3 w-3 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-24 mt-1" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : accounts.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />

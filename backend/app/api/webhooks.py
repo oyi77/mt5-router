@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.models.database import User, WebhookConfig as DBWebhookConfig
 from app.auth.jwt import get_current_user
 
-router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
@@ -74,7 +74,7 @@ async def configure_webhook(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     webhook_config = DBWebhookConfig(
         user_id=user_id,
@@ -95,7 +95,7 @@ async def configure_webhook(
 async def list_webhooks(
     user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
     webhooks = (
         db.query(DBWebhookConfig).filter(DBWebhookConfig.user_id == user_id).all()
     )
@@ -117,7 +117,7 @@ async def delete_webhook(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = user.get("id")
+    user_id = user.get("sub")
 
     webhook = (
         db.query(DBWebhookConfig)
@@ -143,7 +143,7 @@ async def test_webhook(
     webhook = (
         db.query(DBWebhookConfig)
         .filter(
-            DBWebhookConfig.id == webhook_id, DBWebhookConfig.user_id == user.get("id")
+            DBWebhookConfig.id == webhook_id, DBWebhookConfig.user_id == user.get("sub")
         )
         .first()
     )

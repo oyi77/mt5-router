@@ -5,24 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { CreditCard, Check, ExternalLink } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CreditCard, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function BillingPanel() {
   const queryClient = useQueryClient()
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, isLoading: subLoading } = useQuery({
     queryKey: ['subscription'],
     queryFn: billingApi.getSubscription,
   })
 
-  const { data: usage } = useQuery({
+  const { data: usage, isLoading: usageLoading } = useQuery({
     queryKey: ['usage'],
     queryFn: billingApi.getUsage,
   })
 
-  const { data: tiers } = useQuery({
+  const { data: tiers, isLoading: tiersLoading } = useQuery({
     queryKey: ['tiers'],
     queryFn: billingApi.getTiers,
   })
@@ -30,6 +31,7 @@ export function BillingPanel() {
   const { data: invoices } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => billingApi.getInvoices(10),
+    retry: false,
   })
 
   const createCheckout = useMutation({
@@ -50,6 +52,33 @@ export function BillingPanel() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subscription'] }),
   })
 
+  const isLoading = subLoading || usageLoading || tiersLoading
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-4 w-48" />
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -60,51 +89,47 @@ export function BillingPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h3 className="text-2xl font-bold capitalize">{subscription?.tier || 'Free'}</h3>
               <p className="text-muted-foreground">
-                {subscription?.status === 'active' ? 'Active' : subscription?.status}
+                {subscription?.status === 'active' ? 'Active' : subscription?.status || 'Active'}
                 {subscription?.current_period_end && (
-                  <> • Renews {new Date(subscription.current_period_end).toLocaleDateString()}</>
+                  <> - Renews {new Date(subscription.current_period_end).toLocaleDateString()}</>
                 )}
               </p>
             </div>
             <div className="flex gap-2">
               {subscription?.cancel_at_period_end ? (
-                <Button onClick={() => reactivate.mutate()}>
-                  Reactivate Subscription
+                <Button onClick={() => reactivate.mutate()} disabled={reactivate.isPending}>
+                  {reactivate.isPending ? "Reactivating..." : "Reactivate Subscription"}
                 </Button>
-              ) : subscription?.tier !== 'free' ? (
-                <Button variant="outline" onClick={() => cancelSubscription.mutate()}>
-                  Cancel Subscription
+              ) : subscription?.tier && subscription.tier !== 'free' ? (
+                <Button variant="outline" onClick={() => cancelSubscription.mutate()} disabled={cancelSubscription.isPending}>
+                  {cancelSubscription.isPending ? "Cancelling..." : "Cancel Subscription"}
                 </Button>
               ) : null}
-              <Button variant="outline" onClick={() => window.open('/api/v1/billing/portal', '_blank')}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Billing Portal
-              </Button>
             </div>
           </div>
 
           {usage && (
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
-                <div className="flex justify-between mb-2">
-                  <span>Servers</span>
-                  <span>{usage.usage.servers.current} / {usage.usage.servers.unlimited ? '∞' : usage.usage.servers.limit}</span>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span className="text-muted-foreground">Servers</span>
+                  <span className="font-medium">{usage.usage.servers.current} / {usage.usage.servers.unlimited ? '∞' : usage.usage.servers.limit}</span>
                 </div>
                 {!usage.usage.servers.unlimited && (
-                  <Progress value={(usage.usage.servers.current / usage.usage.servers.limit) * 100} />
+                  <Progress value={(usage.usage.servers.current / usage.usage.servers.limit) * 100} className="h-2" />
                 )}
               </div>
               <div className="p-4 border rounded-lg">
-                <div className="flex justify-between mb-2">
-                  <span>Instances</span>
-                  <span>{usage.usage.instances.current} / {usage.usage.instances.unlimited ? '∞' : usage.usage.instances.limit}</span>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span className="text-muted-foreground">Instances</span>
+                  <span className="font-medium">{usage.usage.instances.current} / {usage.usage.instances.unlimited ? '∞' : usage.usage.instances.limit}</span>
                 </div>
                 {!usage.usage.instances.unlimited && (
-                  <Progress value={(usage.usage.instances.current / usage.usage.instances.limit) * 100} />
+                  <Progress value={(usage.usage.instances.current / usage.usage.instances.limit) * 100} className="h-2" />
                 )}
               </div>
             </div>
@@ -115,7 +140,7 @@ export function BillingPanel() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Available Plans</h2>
-          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+          <div className="flex gap-1 p-1 bg-muted rounded-lg">
             <Button
               size="sm"
               variant={billingPeriod === 'monthly' ? 'secondary' : 'ghost'}
@@ -128,7 +153,8 @@ export function BillingPanel() {
               variant={billingPeriod === 'yearly' ? 'secondary' : 'ghost'}
               onClick={() => setBillingPeriod('yearly')}
             >
-              Yearly <Badge variant="success" className="ml-2">Save 17%</Badge>
+              Yearly
+              <Badge variant="outline" className="ml-2 text-xs">-17%</Badge>
             </Button>
           </div>
         </div>
@@ -137,7 +163,7 @@ export function BillingPanel() {
           {tiers && Object.entries(tiers).map(([key, tier]) => {
             const isCurrentPlan = subscription?.tier === key
             const price = billingPeriod === 'monthly' ? tier.price_monthly : tier.price_yearly
-            
+
             return (
               <Card key={key} className={cn(
                 "relative",
@@ -151,26 +177,33 @@ export function BillingPanel() {
                 <CardHeader>
                   <CardTitle>{tier.name}</CardTitle>
                   <CardDescription>
-                    <span className="text-3xl font-bold text-foreground">${(price / 100).toFixed(0)}</span>
-                    <span className="text-muted-foreground">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
+                    <span className="text-3xl font-bold text-foreground">
+                      {price === 0 ? 'Free' : `$${price.toFixed(0)}`}
+                    </span>
+                    {price > 0 && (
+                      <span className="text-muted-foreground">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2 mb-4">
-                    {tier.features.map((feature, i) => (
+                  <ul className="space-y-2 mb-6">
+                    {tier.features.map((feature: string, i: number) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="h-4 w-4 text-green-500 shrink-0" />
                         {feature}
                       </li>
                     ))}
                   </ul>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     variant={isCurrentPlan ? "outline" : "default"}
-                    disabled={isCurrentPlan || price === 0}
-                    onClick={() => createCheckout.mutate({ tier: key, period: billingPeriod })}
+                    disabled={isCurrentPlan || createCheckout.isPending}
+                    onClick={() => {
+                      if (price === 0) return
+                      createCheckout.mutate({ tier: key, period: billingPeriod })
+                    }}
                   >
-                    {isCurrentPlan ? 'Current Plan' : price === 0 ? 'Contact Sales' : 'Upgrade'}
+                    {isCurrentPlan ? 'Current Plan' : price === 0 ? 'Free Forever' : 'Upgrade'}
                   </Button>
                 </CardContent>
               </Card>
@@ -179,7 +212,7 @@ export function BillingPanel() {
         </div>
       </div>
 
-      {invoices && invoices.length > 0 && (
+      {invoices && Array.isArray(invoices) && invoices.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Recent Invoices</CardTitle>

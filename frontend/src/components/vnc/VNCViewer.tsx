@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Monitor, Maximize, Minimize, RefreshCw } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Monitor, Maximize, Minimize, RefreshCw, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface VNCViewerProps {
@@ -12,9 +13,11 @@ interface VNCViewerProps {
 export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const vncUrl = `/api/v1/vnc/${instanceId}/vnc.html`
+  const vncUrl = `/api/v1/vnc/${instanceId}/proxy/vnc.html?autoconnect=true&resize=scale&path=api/v1/vnc/${instanceId}/proxy/websockify`
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -24,6 +27,12 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
       document.exitFullscreen()
       setIsFullscreen(false)
     }
+  }
+
+  const handleRefresh = () => {
+    setIsLoading(true)
+    setError(null)
+    setKey(prev => prev + 1)
   }
 
   useEffect(() => {
@@ -44,7 +53,11 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">VNC not available for this instance</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">VNC not available for this instance.</p>
+            <p className="text-sm text-muted-foreground mt-1">Make sure the instance is running and VNC port (6081) is exposed.</p>
+          </div>
         </CardContent>
       </Card>
     )
@@ -55,10 +68,11 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
       <CardHeader className="flex flex-row items-center justify-between py-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Monitor className="h-4 w-4" />
-          VNC - {instanceId}
+          VNC - {instanceId.substring(0, 12)}
+          <Badge variant="outline" className="ml-2">Port {vncPort}</Badge>
         </CardTitle>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+          <Button size="sm" variant="outline" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onClick={toggleFullscreen}>
@@ -73,16 +87,36 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
       <CardContent className="p-0">
         <div className="relative bg-black" style={{ minHeight: "500px" }}>
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <div className="text-white">Loading VNC...</div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-3" />
+                <p className="text-white text-sm">Connecting to VNC...</p>
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+              <div className="text-center">
+                <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+                <p className="text-red-400 text-sm">{error}</p>
+                <Button size="sm" variant="outline" className="mt-3" onClick={handleRefresh}>
+                  Retry
+                </Button>
+              </div>
             </div>
           )}
           <iframe
+            key={key}
             src={vncUrl}
             className="w-full border-0"
             style={{ height: isFullscreen ? "calc(100vh - 60px)" : "600px" }}
             onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false)
+              setError("Failed to load VNC viewer")
+            }}
             title="VNC Viewer"
+            allow="clipboard-read; clipboard-write"
           />
         </div>
       </CardContent>

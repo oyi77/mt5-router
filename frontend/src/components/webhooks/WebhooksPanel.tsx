@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWebhooks, CreateWebhookRequest } from '@/api/webhooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Webhook, RefreshCw, Trash2, Send, Plus } from 'lucide-react'
 
 const EVENT_OPTIONS = [
@@ -105,7 +106,24 @@ export function WebhooksPanel() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground">Loading webhooks...</p>
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                    <div className="flex gap-1">
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-5 w-20" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : webhooks.length === 0 ? (
             <div className="text-center py-8 border rounded-lg">
               <Webhook className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

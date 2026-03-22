@@ -1,13 +1,15 @@
 import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { LogIn, Shield } from "lucide-react"
+import { LogIn, Shield, ArrowLeft } from "lucide-react"
 
 export function Login() {
   const { login } = useAuth()
+  const navigate = useNavigate()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -20,6 +22,7 @@ export function Login() {
 
     try {
       await login(username, password)
+      navigate("/dashboard")
     } catch (err) {
       setError("Invalid credentials")
     } finally {
@@ -79,8 +82,22 @@ export function Login() {
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Default: admin / admin123</p>
+          <div className="mt-6 space-y-2 text-center text-sm">
+            <p className="text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline font-medium">
+                Sign up
+              </Link>
+            </p>
+            <p>
+              <Link
+                to="/"
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                Back to home
+              </Link>
+            </p>
           </div>
         </CardContent>
       </Card>
