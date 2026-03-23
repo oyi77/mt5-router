@@ -66,7 +66,14 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
 
-app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=lifespan)
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -96,9 +103,14 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"]
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 
 
-@app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+
+
+@app.get("/health")
+async def health_redirect():
+    return {"status": "ok", "redirect": "/api/health"}
 
 
 @app.get("/api/v1/info")
@@ -138,12 +150,7 @@ if os.path.exists(FRONTEND_DIR):
 
     @app.get("/{full_path:path}")
     async def serve_frontend(request: Request, full_path: str):
-        if (
-            full_path.startswith("api/")
-            or full_path.startswith("docs")
-            or full_path.startswith("redoc")
-            or full_path.startswith("openapi")
-        ):
+        if full_path.startswith("api/"):
             return {"detail": "Not Found"}
 
         file_path = os.path.join(FRONTEND_DIR, full_path)
