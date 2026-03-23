@@ -141,11 +141,12 @@ if os.path.exists(FRONTEND_DIR):
         name="assets",
     )
 
+    @app.get("/favicon.svg")
     @app.get("/vite.svg")
-    async def serve_vite_svg():
-        svg_path = os.path.join(FRONTEND_DIR, "vite.svg")
-        if os.path.exists(svg_path):
-            return FileResponse(svg_path)
+    async def serve_favicon():
+        favicon_path = os.path.join(FRONTEND_DIR, "favicon.svg")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
         return {"detail": "Not Found"}
 
     @app.get("/{full_path:path}")
