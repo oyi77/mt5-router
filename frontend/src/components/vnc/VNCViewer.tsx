@@ -17,7 +17,7 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
   const [key, setKey] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const vncUrl = `/api/v1/vnc/${instanceId}/proxy/vnc.html?autoconnect=true&resize=scale&path=api/v1/vnc/${instanceId}/proxy/websockify`
+  const vncUrl = `/api/v1/vnc/${instanceId}/proxy/vnc.html?autoconnect=true&resize=scale&path=/api/v1/vnc/${instanceId}/proxy/websockify`
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
