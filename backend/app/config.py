@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     STRIPE_PRICE_BASIC_MONTHLY: str = ""
     STRIPE_PRICE_PRO_MONTHLY: str = ""
 
+    # NOWPayments (crypto)
+    NOWPAYMENTS_API_KEY: str = ""
+    NOWPAYMENTS_IPN_SECRET: str = ""
+    NOWPAYMENTS_SANDBOX: bool = True
+
     # Email (SMTP)
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

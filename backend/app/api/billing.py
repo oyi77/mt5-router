@@ -14,6 +14,7 @@ from app.models.database import (
 )
 from app.auth.jwt import get_current_user
 from app.services.billing_service import billing_service, TIER_CONFIGS
+from app.services.nowpayments_service import nowpayments_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -269,6 +270,95 @@ async def get_usage(
             "end": (datetime.utcnow().replace(day=1) + timedelta(days=30)).isoformat(),
         },
     }
+
+
+@router.post("/nowpayments/checkout")
+async def nowpayments_checkout(
+    checkout: CheckoutRequest,
+    token: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not nowpayments_service:
+        raise HTTPException(status_code=500, detail="NOWPayments not configured")
+
+    tier_config = TIER_CONFIGS.get(checkout.tier)
+    if not tier_config:
+        raise HTTPException(status_code=400, detail="Invalid tier")
+
+    if checkout.billing_period == "yearly":
+        amount_cents = tier_config["price_yearly"]
+    else:
+        amount_cents = tier_config["price_monthly"]
+
+    if amount_cents <= 0:
+        raise HTTPException(status_code=400, detail="Cannot checkout free/enterprise tier")
+
+    amount_usd = amount_cents / 100
+
+    user = get_user_from_token(token, db)
+    result = await nowpayments_service.create_payment(
+        amount_usd=amount_usd,
+        tier=checkout.tier,
+        billing_period=checkout.billing_period,
+        user_id=user.id,
+    )
+
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to create payment")
+
+    return result
+
+
+@router.post("/nowpayments/webhook")
+async def nowpayments_webhook(request: Request, db: Session = Depends(get_db)):
+    if not nowpayments_service:
+        return {"status": "error", "message": "NOWPayments not configured"}
+
+    payload = await request.json()
+    signature = request.headers.get("x-nowpayments-sig", "")
+
+    if not nowpayments_service.verify_webhook(payload, signature):
+        raise HTTPException(status_code=400, detail="Invalid IPN signature")
+
+    payment_status = payload.get("payment_status")
+    order_id = payload.get("order_id", "")
+
+    if payment_status == "finished":
+        # order_id format: {user_id}_{tier}_{billing_period}
+        parts = order_id.split("_", 2)
+        if len(parts) == 3:
+            user_id, tier, billing_period = int(parts[0]), parts[1], parts[2]
+
+            from datetime import datetime, timedelta
+
+            sub = db.query(Subscription).filter(Subscription.user_id == user_id).first()
+            period_days = 365 if billing_period == "yearly" else 30
+
+            if not sub:
+                sub = Subscription(
+                    user_id=user_id,
+                    tier=tier,
+                    status="active",
+                    current_period_start=datetime.utcnow(),
+                    current_period_end=datetime.utcnow() + timedelta(days=period_days),
+                )
+                db.add(sub)
+            else:
+                sub.tier = tier
+                sub.status = "active"
+                sub.current_period_start = datetime.utcnow()
+                sub.current_period_end = datetime.utcnow() + timedelta(days=period_days)
+                sub.cancel_at_period_end = False
+
+            db.commit()
+            logger.info(f"NOWPayments: activated {tier} subscription for user {user_id}")
+        else:
+            logger.error(f"NOWPayments: invalid order_id format: {order_id}")
+
+    elif payment_status in ("failed", "expired"):
+        logger.error(f"NOWPayments: payment {payment_status} for order {order_id}")
+
+    return {"status": "ok"}
 
 
 @router.post("/webhook")
