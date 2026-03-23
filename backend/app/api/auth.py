@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+import bcrypt
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -11,7 +11,6 @@ from app.auth.jwt import create_access_token, verify_token
 from app.services.auth_enhancement_service import auth_enhancement_service
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class RegisterRequest(BaseModel):
@@ -57,7 +56,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         .first()
     )
 
-    if not user or not pwd_context.verify(request.password, user.hashed_password):
+    if not user or not bcrypt.checkpw(
+        request.password.encode("utf-8"), user.hashed_password.encode("utf-8")
+    ):
         if user:
             user.failed_login_attempts += 1
             if auth_enhancement_service:
@@ -128,7 +129,9 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     user = User(
         email=request.email,
         username=request.username,
-        hashed_password=pwd_context.hash(request.password),
+        hashed_password=bcrypt.hashpw(
+            request.password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8"),
         full_name=request.full_name,
         is_verified=is_verified,
         verification_token=verification_token,
@@ -213,7 +216,9 @@ async def reset_password(request: ResetPasswordRequest, db: Session = Depends(ge
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    user.hashed_password = pwd_context.hash(request.new_password)
+    user.hashed_password = bcrypt.hashpw(
+        request.new_password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
     user.reset_token = None
     user.reset_token_expires = None
     user.failed_login_attempts = 0
