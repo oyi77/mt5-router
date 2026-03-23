@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from app.config import settings
 from app.api import (
@@ -24,7 +27,11 @@ from app.models.database import Base
 from app.core.database import engine
 from app.services.ssh_service import init_ssh_service
 from app.services.billing_service import init_billing_service
-from app.services.metrics_collector import start_metrics_collector, stop_metrics_collector
+from app.services.nowpayments_service import init_nowpayments_service
+from app.services.metrics_collector import (
+    start_metrics_collector,
+    stop_metrics_collector,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +49,14 @@ async def lifespan(app: FastAPI):
     if settings.STRIPE_SECRET_KEY and settings.STRIPE_WEBHOOK_SECRET:
         init_billing_service(settings.STRIPE_SECRET_KEY, settings.STRIPE_WEBHOOK_SECRET)
         logger.info("Billing service initialized")
+
+    if settings.NOWPAYMENTS_API_KEY:
+        init_nowpayments_service(
+            settings.NOWPAYMENTS_API_KEY,
+            settings.NOWPAYMENTS_IPN_SECRET,
+            settings.NOWPAYMENTS_SANDBOX,
+        )
+        logger.info("NOWPayments service initialized")
 
     start_metrics_collector(interval=60)
     logger.info("Metrics collector started")
@@ -101,3 +116,42 @@ async def info():
             "accounts",
         ],
     }
+
+
+FRONTEND_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist"
+)
+
+if os.path.exists(FRONTEND_DIR):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")),
+        name="assets",
+    )
+
+    @app.get("/vite.svg")
+    async def serve_vite_svg():
+        svg_path = os.path.join(FRONTEND_DIR, "vite.svg")
+        if os.path.exists(svg_path):
+            return FileResponse(svg_path)
+        return {"detail": "Not Found"}
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(request: Request, full_path: str):
+        if (
+            full_path.startswith("api/")
+            or full_path.startswith("docs")
+            or full_path.startswith("redoc")
+            or full_path.startswith("openapi")
+        ):
+            return {"detail": "Not Found"}
+
+        file_path = os.path.join(FRONTEND_DIR, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+    logger.info(f"Frontend static files mounted from {FRONTEND_DIR}")
+else:
+    logger.warning(f"Frontend directory not found at {FRONTEND_DIR}")
