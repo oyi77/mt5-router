@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  Server, Plus, RefreshCw, Trash2, Activity, 
-  Cpu, HardDrive, MemoryStick, ChevronDown, ChevronUp 
+import {
+  Server, Plus, RefreshCw, Trash2, Activity,
+  Cpu, HardDrive, MemoryStick, ChevronDown, ChevronUp, Home
 } from 'lucide-react'
 import { ServerMetricsChart } from '@/components/servers/ServerMetricsChart'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,7 @@ export function ServersPanel() {
   const queryClient = useQueryClient()
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedServer, setExpandedServer] = useState<number | null>(null)
+  const [localExpanded, setLocalExpanded] = useState(true)
   const [newServer, setNewServer] = useState({
     name: '',
     host: '',
@@ -30,6 +31,12 @@ export function ServersPanel() {
   const { data: servers = [], isLoading } = useQuery({
     queryKey: ['servers'],
     queryFn: serversApi.list,
+  })
+
+  const { data: localHealth, isLoading: localLoading, refetch: refetchLocal } = useQuery({
+    queryKey: ['localServerHealth'],
+    queryFn: serversApi.localHealth,
+    refetchInterval: 30000,
   })
 
   const createServer = useMutation({
@@ -76,16 +83,21 @@ export function ServersPanel() {
     }
   }
 
+  const totalServers = servers.length + 1
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Server className="h-5 w-5" />
-            SSH Servers ({servers.length})
+            Servers ({totalServers})
           </CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['serverHealth'] })}>
+            <Button variant="outline" size="sm" onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['serverHealth'] })
+              refetchLocal()
+            }}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -121,7 +133,7 @@ export function ServersPanel() {
                 <Input placeholder="root" value={newServer.username} onChange={e => setNewServer({...newServer, username: e.target.value})} />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
@@ -133,11 +145,11 @@ export function ServersPanel() {
                   Password
                 </label>
               </div>
-              
+
               {newServer.use_key_auth ? (
                 <div>
                   <label className="text-sm font-medium">Private Key</label>
-                  <textarea 
+                  <textarea
                     className="w-full h-32 p-2 border rounded-md bg-background font-mono text-sm"
                     placeholder="-----BEGIN RSA PRIVATE KEY-----..."
                     value={newServer.private_key}
@@ -151,10 +163,10 @@ export function ServersPanel() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
-              <Button 
+              <Button
                 onClick={() => createServer.mutate(newServer)}
                 disabled={!newServer.name || !newServer.host || !newServer.username}
               >
@@ -165,119 +177,203 @@ export function ServersPanel() {
         </Card>
       )}
 
-      {isLoading ? (
-        <p className="text-muted-foreground">Loading servers...</p>
-      ) : servers.length === 0 ? (
+      {/* Local Server - always shown */}
+      <Card className="border-green-500/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <div className="flex items-center gap-2">
+                <Home className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-lg">Local Server</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">Docker socket</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="success">healthy</Badge>
+              <Button size="sm" variant="outline" onClick={() => refetchLocal()}>
+                <Activity className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setLocalExpanded(!localExpanded)}>
+                {localExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        {localExpanded && localHealth?.metrics && (
+          <CardContent className="pt-0 border-t">
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Cpu className="h-4 w-4" />
+                  <span>CPU</span>
+                  <span className="ml-auto font-mono">{localHealth.metrics.cpu_percent}%</span>
+                </div>
+                <Progress value={localHealth.metrics.cpu_percent} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <MemoryStick className="h-4 w-4" />
+                  <span>Memory</span>
+                  <span className="ml-auto font-mono">{localHealth.metrics.memory?.percent}%</span>
+                </div>
+                <Progress value={localHealth.metrics.memory?.percent} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <HardDrive className="h-4 w-4" />
+                  <span>Disk</span>
+                  <span className="ml-auto font-mono">{localHealth.metrics.disk?.percent}%</span>
+                </div>
+                <Progress value={localHealth.metrics.disk?.percent} />
+              </div>
+            </div>
+
+            {localHealth.instances && localHealth.instances.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">MT5 Instances ({localHealth.instances.length})</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {localHealth.instances.map((instance) => (
+                    <div key={instance.id} className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm truncate">{instance.name}</span>
+                      <Badge variant={instance.status === 'running' ? 'success' : 'secondary'} className="text-xs">
+                        {instance.status === 'running' ? 'Running' : 'Stopped'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(!localHealth.instances || localHealth.instances.length === 0) && (
+              <div className="mt-4 text-sm text-muted-foreground text-center py-4">
+                No MT5 instances on local server
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Remote SSH Servers */}
+      {servers.length > 0 && (
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium text-muted-foreground px-1">Remote SSH Servers</h3>
+          <div className="space-y-4">
+            {servers.map((server) => {
+              const health = healthData.data?.[server.id]
+              const isExpanded = expandedServer === server.id
+
+              return (
+                <Card key={server.id} className={cn(
+                  "transition-all",
+                  server.health_status === 'healthy' && "border-green-500/30",
+                  server.health_status === 'unhealthy' && "border-yellow-500/30",
+                  server.health_status === 'offline' && "border-red-500/30"
+                )}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-3 h-3 rounded-full",
+                          server.health_status === 'healthy' && "bg-green-500 animate-pulse",
+                          server.health_status === 'unhealthy' && "bg-yellow-500",
+                          server.health_status === 'offline' && "bg-red-500",
+                          server.health_status === 'unknown' && "bg-gray-500"
+                        )} />
+                        <div>
+                          <CardTitle className="text-lg">{server.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">{server.username}@{server.host}:{server.port}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusColor(server.health_status) as any}>
+                          {server.health_status}
+                        </Badge>
+                        <Button size="sm" variant="outline" onClick={() => checkHealth.mutate(server.id)}>
+                          <Activity className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setExpandedServer(isExpanded ? null : server.id)}>
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => deleteServer.mutate(server.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  {isExpanded && health?.metrics && (
+                    <CardContent className="pt-0 border-t">
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Cpu className="h-4 w-4" />
+                            <span>CPU</span>
+                            <span className="ml-auto font-mono">{health.metrics.cpu_percent}%</span>
+                          </div>
+                          <Progress value={health.metrics.cpu_percent} />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <MemoryStick className="h-4 w-4" />
+                            <span>Memory</span>
+                            <span className="ml-auto font-mono">{health.metrics.memory?.percent}%</span>
+                          </div>
+                          <Progress value={health.metrics.memory?.percent} />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <HardDrive className="h-4 w-4" />
+                            <span>Disk</span>
+                            <span className="ml-auto font-mono">{health.metrics.disk?.percent}%</span>
+                          </div>
+                          <Progress value={health.metrics.disk?.percent} />
+                        </div>
+                      </div>
+
+                      {health.instances && health.instances.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium mb-2">MT5 Instances ({health.instances.length})</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {health.instances.map((instance) => (
+                              <div key={instance.id} className="flex items-center justify-between p-2 border rounded">
+                                <span className="text-sm truncate">{instance.name}</span>
+                                <Badge variant={instance.status.includes('Up') ? 'success' : 'secondary'} className="text-xs">
+                                  {instance.status.includes('Up') ? 'Running' : 'Stopped'}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 border-t pt-2">
+                        <h4 className="text-sm font-medium mb-1">Metrics History</h4>
+                        <ServerMetricsChart serverId={server.id} />
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state for remote servers */}
+      {!isLoading && servers.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <Server className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No SSH servers configured</p>
-            <Button className="mt-4" onClick={() => setShowAddForm(true)}>
+          <CardContent className="py-8 text-center">
+            <Server className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No remote SSH servers configured</p>
+            <p className="text-xs text-muted-foreground mt-1">Add a remote VPS to manage MT5 instances on other machines</p>
+            <Button className="mt-4" size="sm" onClick={() => setShowAddForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add First Server
+              Add Remote Server
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-4">
-          {servers.map((server) => {
-            const health = healthData.data?.[server.id]
-            const isExpanded = expandedServer === server.id
-            
-            return (
-              <Card key={server.id} className={cn(
-                "transition-all",
-                server.health_status === 'healthy' && "border-green-500/30",
-                server.health_status === 'unhealthy' && "border-yellow-500/30",
-                server.health_status === 'offline' && "border-red-500/30"
-              )}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-3 h-3 rounded-full",
-                        server.health_status === 'healthy' && "bg-green-500 animate-pulse",
-                        server.health_status === 'unhealthy' && "bg-yellow-500",
-                        server.health_status === 'offline' && "bg-red-500",
-                        server.health_status === 'unknown' && "bg-gray-500"
-                      )} />
-                      <div>
-                        <CardTitle className="text-lg">{server.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{server.username}@{server.host}:{server.port}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStatusColor(server.health_status) as any}>
-                        {server.health_status}
-                      </Badge>
-                      <Button size="sm" variant="outline" onClick={() => checkHealth.mutate(server.id)}>
-                        <Activity className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setExpandedServer(isExpanded ? null : server.id)}>
-                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteServer.mutate(server.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                {isExpanded && health?.metrics && (
-                  <CardContent className="pt-0 border-t">
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Cpu className="h-4 w-4" />
-                          <span>CPU</span>
-                          <span className="ml-auto font-mono">{health.metrics.cpu_percent}%</span>
-                        </div>
-                        <Progress value={health.metrics.cpu_percent} />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MemoryStick className="h-4 w-4" />
-                          <span>Memory</span>
-                          <span className="ml-auto font-mono">{health.metrics.memory?.percent}%</span>
-                        </div>
-                        <Progress value={health.metrics.memory?.percent} />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <HardDrive className="h-4 w-4" />
-                          <span>Disk</span>
-                          <span className="ml-auto font-mono">{health.metrics.disk?.percent}%</span>
-                        </div>
-                        <Progress value={health.metrics.disk?.percent} />
-                      </div>
-                    </div>
-                    
-                    {health.instances && health.instances.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">MT5 Instances ({health.instances.length})</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {health.instances.map((instance) => (
-                            <div key={instance.id} className="flex items-center justify-between p-2 border rounded">
-                              <span className="text-sm truncate">{instance.name}</span>
-                              <Badge variant={instance.status.includes('Up') ? 'success' : 'secondary'} className="text-xs">
-                                {instance.status.includes('Up') ? 'Running' : 'Stopped'}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 border-t pt-2">
-                      <h4 className="text-sm font-medium mb-1">Metrics History</h4>
-                      <ServerMetricsChart serverId={server.id} />
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            )
-          })}
-        </div>
       )}
     </div>
   )

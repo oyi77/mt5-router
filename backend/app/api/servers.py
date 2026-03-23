@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from datetime import datetime
 import random
+import docker
+import psutil
+import platform
 
 from app.core.database import get_db
 from app.models.database import SSHServer, ServerMetrics, Instance
@@ -11,6 +14,66 @@ from app.auth.jwt import get_current_user
 from app.services.ssh_service import ssh_service
 
 router = APIRouter()
+
+
+@router.get("/local/health")
+async def local_server_health(user=Depends(get_current_user)):
+    """Get health metrics for the local Docker server."""
+    try:
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
+
+        client = docker.from_env()
+        containers = client.containers.list(
+            all=True, filters={"label": "mt5-router.instance"}
+        )
+
+        instances = []
+        for c in containers:
+            ports = c.ports
+            instances.append(
+                {
+                    "id": c.id[:12],
+                    "name": c.name,
+                    "status": c.status,
+                    "rpyc_port": ports.get("18812/tcp", [{}])[0].get("HostPort")
+                    if ports.get("18812/tcp")
+                    else None,
+                    "vnc_port": ports.get("6081/tcp", [{}])[0].get("HostPort")
+                    if ports.get("6081/tcp")
+                    else None,
+                }
+            )
+
+        return {
+            "server_id": 0,
+            "status": "healthy",
+            "metrics": {
+                "cpu_percent": round(cpu_percent, 1),
+                "memory": {
+                    "total": memory.total,
+                    "used": memory.used,
+                    "percent": round(memory.percent, 1),
+                },
+                "disk": {
+                    "total": f"{disk.total / (1024**3):.1f}G",
+                    "used": f"{disk.used / (1024**3):.1f}G",
+                    "percent": round(disk.percent, 1),
+                },
+                "hostname": platform.node(),
+                "containers_total": len(containers),
+                "containers_running": sum(
+                    1 for c in containers if c.status == "running"
+                ),
+            },
+            "instances": instances,
+            "checked_at": datetime.utcnow().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get local server health: {e}"
+        )
 
 
 class ServerCreate(BaseModel):

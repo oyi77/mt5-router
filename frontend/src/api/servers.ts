@@ -54,6 +54,9 @@ export interface ServerInstance {
 }
 
 export const serversApi = {
+  // Local server health
+  localHealth: () => api.get<ServerHealth>('/servers/local/health'),
+
   // Server CRUD
   list: () => api.get<SSHServer[]>('/servers'),
   
