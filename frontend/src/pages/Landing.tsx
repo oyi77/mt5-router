@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Zap,
   Globe,
+  Menu,
+  X,
 } from "lucide-react"
 
 const features = [
@@ -74,6 +76,7 @@ export function Landing() {
   const [tiers, setTiers] = useState<Record<string, Tier> | null>(null)
   const [tiersError, setTiersError] = useState(false)
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     fetch("/api/v1/billing/tiers")
@@ -106,7 +109,9 @@ export function Landing() {
               <Shield className="h-7 w-7 text-primary" />
               <span className="text-lg font-bold">MT5 Router</span>
             </div>
-            <div className="flex items-center gap-3">
+            
+            {/* Desktop navigation */}
+            <div className="hidden sm:flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={scrollToPricing}>
                 Pricing
               </Button>
@@ -122,7 +127,50 @@ export function Landing() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="sm:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
           </div>
+
+          {/* Mobile navigation */}
+          {mobileMenuOpen && (
+            <div className="sm:hidden py-4 border-t border-border/40">
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  onClick={() => {
+                    scrollToPricing()
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  Pricing
+                </Button>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    Log In
+                  </Button>
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full">
+                    Get Started
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 

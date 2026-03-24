@@ -45,7 +45,7 @@ export function StatisticsPanel({ instanceId }: StatisticsPanelProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
@@ -104,7 +104,7 @@ export function StatisticsPanel({ instanceId }: StatisticsPanelProps) {
           <CardTitle>Performance Metrics</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
             <div>
               <p className="text-sm text-muted-foreground">Average Win</p>
               <p className="text-lg font-semibold text-green-500">

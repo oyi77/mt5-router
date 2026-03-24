@@ -218,27 +218,28 @@ export function BillingPanel() {
             <CardTitle>Recent Invoices</CardTitle>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2">Date</th>
-                  <th className="text-right py-2">Amount</th>
-                  <th className="text-center py-2">Status</th>
-                  <th className="text-right py-2">Actions</th>
+                  <th className="text-left py-2 px-2 sm:px-4">Date</th>
+                  <th className="text-right py-2 px-2 sm:px-4">Amount</th>
+                  <th className="text-center py-2 px-2 sm:px-4">Status</th>
+                  <th className="text-right py-2 px-2 sm:px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((invoice) => (
                   <tr key={invoice.id} className="border-b">
-                    <td className="py-2">{new Date(invoice.created).toLocaleDateString()}</td>
-                    <td className="py-2 text-right">${(invoice.amount / 100).toFixed(2)}</td>
-                    <td className="py-2 text-center">
+                    <td className="py-2 px-2 sm:px-4">{new Date(invoice.created).toLocaleDateString()}</td>
+                    <td className="py-2 px-2 sm:px-4 text-right">${(invoice.amount / 100).toFixed(2)}</td>
+                    <td className="py-2 px-2 sm:px-4 text-center">
                       <Badge variant={invoice.status === 'paid' ? 'success' : 'secondary'}>
                         {invoice.status}
                       </Badge>
                     </td>
-                    <td className="py-2 text-right">
-                      <div className="flex gap-2 justify-end">
+                    <td className="py-2 px-2 sm:px-4 text-right">
+                      <div className="flex gap-1 sm:gap-2 justify-end">
                         {invoice.invoice_url && (
                           <Button size="sm" variant="ghost" onClick={() => window.open(invoice.invoice_url!, '_blank')}>
                             View
@@ -255,6 +256,7 @@ export function BillingPanel() {
                 ))}
               </tbody>
             </table>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -190,33 +190,35 @@ export function Dashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Activity className="h-5 w-5 text-primary-foreground" />
+        <div className="container mx-auto px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold">MT5 Router</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Trading Dashboard</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">MT5 Router</h1>
-              <p className="text-sm text-muted-foreground">Trading Dashboard</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Badge variant="outline" className="gap-1">
-                  <Shield className="h-3 w-3" />
-                  Admin
-                </Badge>
-              )}
-              <span className="text-sm text-muted-foreground">
-                {user?.username}
-              </span>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 sm:gap-2">
+                {isAdmin && (
+                  <Badge variant="outline" className="gap-1 text-xs">
+                    <Shield className="h-3 w-3" />
+                    Admin
+                  </Badge>
+                )}
+                <span className="text-xs sm:text-sm text-muted-foreground max-w-[100px] sm:max-w-none truncate">
+                  {user?.username}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={logout} className="h-8 sm:h-9">
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
@@ -271,70 +273,72 @@ export function Dashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 flex-wrap">
+          <div className="overflow-x-auto -mx-4 px-4 mb-4">
+            <TabsList className="mb-0">
             <TabsTrigger value="instances">
-              <Server className="h-4 w-4 mr-2" />
-              Instances
+              <Server className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Instances</span>
             </TabsTrigger>
             <TabsTrigger value="trading">
-              <Wallet className="h-4 w-4 mr-2" />
-              Trading
+              <Wallet className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Trading</span>
             </TabsTrigger>
             <TabsTrigger value="vnc">
-              <Monitor className="h-4 w-4 mr-2" />
-              VNC
+              <Monitor className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">VNC</span>
             </TabsTrigger>
             <TabsTrigger value="monitoring">
-              <Activity className="h-4 w-4 mr-2" />
-              Monitoring
+              <Activity className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Monitoring</span>
             </TabsTrigger>
             <TabsTrigger value="notifications">
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications
+              <Bell className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Notifications</span>
             </TabsTrigger>
             <TabsTrigger value="servers">
-              <Server className="h-4 w-4 mr-2" />
-              Servers
+              <Server className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Servers</span>
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="billing">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Billing
+                <CreditCard className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Billing</span>
               </TabsTrigger>
             )}
             <TabsTrigger value="accounts">
-              <Key className="h-4 w-4 mr-2" />
-              Accounts
+              <Key className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Accounts</span>
             </TabsTrigger>
             <TabsTrigger value="statistics">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Statistics
+              <BarChart3 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Statistics</span>
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="webhooks">
-                <Webhook className="h-4 w-4 mr-2" />
-                Webhooks
+                <Webhook className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Webhooks</span>
               </TabsTrigger>
             )}
             {isAdmin && (
               <TabsTrigger value="admin-users">
-                <Users className="h-4 w-4 mr-2" />
-                Users
+                <Users className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Users</span>
               </TabsTrigger>
             )}
             {isAdmin && (
               <TabsTrigger value="admin-tiers">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Tiers
+                <DollarSign className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Tiers</span>
               </TabsTrigger>
             )}
             {isAdmin && (
               <TabsTrigger value="admin-analytics">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Analytics
+                <TrendingUp className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
             )}
           </TabsList>
+          </div>
 
           <TabsContent value="instances">
             <div className="flex items-center justify-between mb-4">

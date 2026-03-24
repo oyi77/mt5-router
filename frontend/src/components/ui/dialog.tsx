@@ -43,10 +43,10 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
         onClick={() => onOpenChange?.(false)}
       >
         <div className="fixed inset-0 bg-black/50 animate-in fade-in-0" />
-        <div
+          <div
           ref={ref}
           className={cn(
-            "relative z-50 bg-background rounded-lg border p-6 shadow-lg w-full max-w-lg mx-4 animate-in fade-in-0 zoom-in-95",
+            "relative z-50 bg-background rounded-lg border p-4 sm:p-6 shadow-lg w-full max-w-lg mx-2 sm:mx-4 animate-in fade-in-0 zoom-in-95 max-h-[90vh] overflow-y-auto",
             className
           )}
           onClick={(e) => e.stopPropagation()}

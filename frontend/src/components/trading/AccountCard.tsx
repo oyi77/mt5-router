@@ -34,7 +34,7 @@ export function AccountCard({ account, className }: AccountCardProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Balance</p>
             <p className="text-xl font-bold">{formatCurrency(account.balance, account.currency)}</p>
@@ -58,17 +58,17 @@ export function AccountCard({ account, className }: AccountCardProps) {
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4">
+        <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="h-4 w-4" />
+            <TrendingUp className="h-4 w-4 shrink-0" />
             <span>Leverage: 1:{account.leverage}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Shield className="h-4 w-4" />
-            <span>{account.name}</span>
+            <Shield className="h-4 w-4 shrink-0" />
+            <span className="truncate">{account.name}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Server className="h-4 w-4" />
+            <Server className="h-4 w-4 shrink-0" />
             <span>{account.currency}</span>
           </div>
         </div>

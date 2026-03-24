@@ -44,8 +44,8 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+        <CardTitle className="text-base sm:text-lg">
           Open Positions ({positions.length})
           <span className={`ml-2 text-lg ${totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             {totalPnL >= 0 ? '+' : ''}{formatCurrency(totalPnL)}
@@ -56,19 +56,19 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
         {positions.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">No open positions</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-2">Symbol</th>
-                  <th className="text-left py-2 px-2">Type</th>
-                  <th className="text-right py-2 px-2">Volume</th>
-                  <th className="text-right py-2 px-2">Open Price</th>
-                  <th className="text-right py-2 px-2">Current</th>
-                  <th className="text-right py-2 px-2">P&L</th>
-                  <th className="text-right py-2 px-2">SL</th>
-                  <th className="text-right py-2 px-2">TP</th>
-                  <th className="text-center py-2 px-2">Action</th>
+                  <th className="text-left py-2 px-2 sm:px-3">Symbol</th>
+                  <th className="text-left py-2 px-2 sm:px-3">Type</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Volume</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Open Price</th>
+                  <th className="text-right py-2 px-2 sm:px-3">Current</th>
+                  <th className="text-right py-2 px-2 sm:px-3">P&L</th>
+                  <th className="text-right py-2 px-2 sm:px-3">SL</th>
+                  <th className="text-right py-2 px-2 sm:px-3">TP</th>
+                  <th className="text-center py-2 px-2 sm:px-3">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,8 +137,8 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
         )}
 
         {modifyDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card p-6 rounded-lg border shadow-lg w-96">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card p-4 sm:p-6 rounded-lg border shadow-lg w-full max-w-sm">
               <h3 className="text-lg font-semibold mb-4">Modify Position #{modifyDialog.ticket}</h3>
               <div className="space-y-4">
                 <div>
@@ -161,11 +161,11 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
                     onChange={(e) => setTpValue(e.target.value)}
                   />
                 </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setModifyDialog(null)}>
+                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button variant="outline" onClick={() => setModifyDialog(null)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
-                  <Button onClick={handleModifySubmit}>
+                  <Button onClick={handleModifySubmit} className="w-full sm:w-auto">
                     Save Changes
                   </Button>
                 </div>
@@ -175,8 +175,8 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
         )}
 
         {partialCloseDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card p-6 rounded-lg border shadow-lg w-96">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card p-4 sm:p-6 rounded-lg border shadow-lg w-full max-w-sm">
               <h3 className="text-lg font-semibold mb-4">Partial Close #{partialCloseDialog.ticket}</h3>
               <div className="space-y-4">
                 <div>
@@ -194,11 +194,11 @@ export function PositionsTable({ positions, onClosePosition, onModifyPosition, o
                     Position volume: {formatNumber(partialCloseDialog.volume)}
                   </p>
                 </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setPartialCloseDialog(null)}>
+                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button variant="outline" onClick={() => setPartialCloseDialog(null)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
-                  <Button onClick={handlePartialCloseSubmit} disabled={!partialVolume}>
+                  <Button onClick={handlePartialCloseSubmit} disabled={!partialVolume} className="w-full sm:w-auto">
                     Close Partial
                   </Button>
                 </div>

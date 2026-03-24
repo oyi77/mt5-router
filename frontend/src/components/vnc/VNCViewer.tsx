@@ -66,26 +66,26 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
   return (
     <Card ref={containerRef} className={cn("overflow-hidden", isFullscreen && "h-screen")}>
       <CardHeader className="flex flex-row items-center justify-between py-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
           <Monitor className="h-4 w-4" />
-          VNC - {instanceId.substring(0, 12)}
-          <Badge variant="outline" className="ml-2">Port {vncPort}</Badge>
+          <span className="truncate max-w-[120px] sm:max-w-none">VNC - {instanceId.substring(0, 12)}</span>
+          <Badge variant="outline" className="ml-1 sm:ml-2 hidden sm:inline-flex">Port {vncPort}</Badge>
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <Button size="sm" variant="outline" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
           <Button size="sm" variant="outline" onClick={toggleFullscreen}>
             {isFullscreen ? (
-              <Minimize className="h-4 w-4" />
+              <Minimize className="h-3 w-3 sm:h-4 sm:w-4" />
             ) : (
-              <Maximize className="h-4 w-4" />
+              <Maximize className="h-3 w-3 sm:h-4 sm:w-4" />
             )}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="relative bg-black" style={{ minHeight: "500px" }}>
+        <div className="relative bg-black" style={{ minHeight: "300px" }}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
               <div className="text-center">
@@ -109,7 +109,7 @@ export function VNCViewer({ instanceId, vncPort }: VNCViewerProps) {
             key={key}
             src={vncUrl}
             className="w-full border-0"
-            style={{ height: isFullscreen ? "calc(100vh - 60px)" : "600px" }}
+            style={{ height: isFullscreen ? "calc(100vh - 60px)" : "min(600px, 70vh)" }}
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false)

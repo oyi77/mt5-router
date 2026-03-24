@@ -115,7 +115,7 @@ export function ServersPanel() {
             <CardTitle>Add SSH Server</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Name</label>
                 <Input placeholder="My VPS 1" value={newServer.name} onChange={e => setNewServer({...newServer, name: e.target.value})} />
@@ -203,7 +203,7 @@ export function ServersPanel() {
 
         {localExpanded && localHealth?.metrics && (
           <CardContent className="pt-0 border-t">
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Cpu className="h-4 w-4" />
@@ -233,7 +233,7 @@ export function ServersPanel() {
             {localHealth.instances && localHealth.instances.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-medium mb-2">MT5 Instances ({localHealth.instances.length})</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {localHealth.instances.map((instance) => (
                     <div key={instance.id} className="flex items-center justify-between p-2 border rounded">
                       <span className="text-sm truncate">{instance.name}</span>
@@ -272,10 +272,10 @@ export function ServersPanel() {
                   server.health_status === 'offline' && "border-red-500/30"
                 )}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className={cn(
-                          "w-3 h-3 rounded-full",
+                          "w-3 h-3 rounded-full shrink-0",
                           server.health_status === 'healthy' && "bg-green-500 animate-pulse",
                           server.health_status === 'unhealthy' && "bg-yellow-500",
                           server.health_status === 'offline' && "bg-red-500",
@@ -286,7 +286,7 @@ export function ServersPanel() {
                           <p className="text-sm text-muted-foreground">{server.username}@{server.host}:{server.port}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={getStatusColor(server.health_status) as any}>
                           {server.health_status}
                         </Badge>
@@ -305,7 +305,7 @@ export function ServersPanel() {
 
                   {isExpanded && health?.metrics && (
                     <CardContent className="pt-0 border-t">
-                      <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
                             <Cpu className="h-4 w-4" />
@@ -335,7 +335,7 @@ export function ServersPanel() {
                       {health.instances && health.instances.length > 0 && (
                         <div className="mt-4">
                           <h4 className="text-sm font-medium mb-2">MT5 Instances ({health.instances.length})</h4>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {health.instances.map((instance) => (
                               <div key={instance.id} className="flex items-center justify-between p-2 border rounded">
                                 <span className="text-sm truncate">{instance.name}</span>
